@@ -97,9 +97,3 @@ def check_employer(username,password):
 
     return result
 
-# -----------------------------
-# CREATE DATABASE TABLES
-# -----------------------------
-
-create_table()
-create_employer_table()

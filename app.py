@@ -13,12 +13,7 @@ st.set_page_config(
 )
 
 
-# -----------------------------
-# CREATE DATABASE TABLES
-# -----------------------------
 
-create_table()
-create_employer_table()
 
 
 

@@ -6,9 +6,6 @@ st.set_page_config(
     layout="centered"
 )
 
-create_table()
-create_employer_table()
-
 st.title("Employee Management System")
 
 

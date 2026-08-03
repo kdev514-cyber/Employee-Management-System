@@ -1,5 +1,21 @@
 import streamlit as st
+import re
 from database import *
+
+def validate_password(password):
+    if len(password) < 8:
+        return False, "Password must contain at least 8 characters."
+    if not re.search(r"[A-Z]", password):
+        return False, "Password must contain at least one capital letter."
+    if not re.search(r"[a-z]", password):
+        return False, "Password must contain at least one small letter."
+    if not re.search(r"[0-9]", password):
+        return False, "Password must contain at least one number."
+    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+        return False, "Password must contain at least one special character."
+    return True, ""
+
+
 
 st.set_page_config(
     page_title="Employee Management System",
@@ -167,20 +183,24 @@ if st.session_state.page == "register":
                 "Passwords do not match."
             )
         else:
-            result = register_employer(
-                new_user,
-                new_password
+             valid, message = validate_password(new_password)
+    if not valid:
+        st.error(message)
+    else:
+        result = register_employer(
+            new_user,
+            new_password
+        )
+        if result:
+            st.success(
+                "Registration successful!"
             )
-            if result:
-                st.success(
-                    "Registration successful!"
-                )
-                st.session_state.page = "employer_login"
-                st.rerun()
-            else:
-                st.error(
-                    "User ID already exists."
-                )
+            st.session_state.page = "employer_login"
+            st.rerun()
+        else:
+            st.error(
+                "User ID already exists."
+            )
     if back_login:
         st.session_state.page = "employer_login"
         st.rerun()

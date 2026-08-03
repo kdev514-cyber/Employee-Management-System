@@ -6,23 +6,32 @@ st.set_page_config(
     layout="centered"
 )
 
-st.title("Employee Management System")
+
+# Create tables
+create_table()
+create_employer_table()
 
 
-# Session states
-if "role" not in st.session_state:
-    st.session_state.role = None
+# -----------------------------
+# SESSION STATES
+# -----------------------------
+
+if "page" not in st.session_state:
+    st.session_state.page = "home"
 
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-if "show_register" not in st.session_state:
-    st.session_state.show_register = False
 
 
+# -----------------------------
+# HOME PAGE
+# -----------------------------
 
-# LOGIN ROLE SELECTION
-if st.session_state.role is None:
+if st.session_state.page == "home":
+
+    st.title("Employee Management System")
+
 
     choice = st.radio(
         "Login as:",
@@ -33,29 +42,32 @@ if st.session_state.role is None:
     if choice == "Employee":
 
         if st.button("Continue as Employee"):
-            st.session_state.role = "employee"
+
+            st.session_state.page = "employee"
+
             st.rerun()
+
 
 
     if choice == "Employer":
 
         if st.button("Continue as Employer"):
-            st.session_state.role = "employer"
+
+            st.session_state.page = "employer_login"
+
             st.rerun()
 
 
 
-# ==========================
-# EMPLOYEE PAGE
-# ==========================
 
-if st.session_state.role == "employee":
+# -----------------------------
+# EMPLOYEE PAGE
+# -----------------------------
+
+if st.session_state.page == "employee":
+
 
     st.title("Employee Details")
-
-    st.subheader("Fill in the employee details below.")
-
-    st.divider()
 
 
     name = st.text_input("Name")
@@ -67,33 +79,46 @@ if st.session_state.role == "employee":
 
     gender = st.selectbox(
         "Gender",
-        ["Select Gender", "Male", "Female", "Other"]
+        [
+            "Select Gender",
+            "Male",
+            "Female",
+            "Other"
+        ]
     )
 
 
     nationality = st.text_input("Nationality")
 
 
-    st.divider()
-
 
     col1, col2 = st.columns(2)
 
 
     with col1:
+
         save = st.button("Save")
 
 
     with col2:
-        edit_records = st.button("Edit Current Table")
+
+        back = st.button("Back")
 
 
 
     if save:
 
-        if name == "" or age == "" or salary == "" or gender == "Select Gender" or nationality == "":
 
-            st.error("Please fill all the required fields.")
+        if (
+            name == ""
+            or age == ""
+            or salary == ""
+            or nationality == ""
+            or gender == "Select Gender"
+        ):
+
+            st.error("Please fill all fields.")
+
 
         else:
 
@@ -113,27 +138,42 @@ if st.session_state.role == "employee":
                 )
 
 
-                st.success("Employee saved successfully!")
+                st.success(
+                    "Employee saved successfully!"
+                )
 
 
-            except ValueError:
+            except:
 
-                st.error("Age and Salary must be numbers.")
+                st.error(
+                    "Age and Salary must be numbers."
+                )
+
+
+
+    if back:
+
+        st.session_state.page = "home"
+
+        st.rerun()
 
 
 
 
-# ==========================
+# -----------------------------
 # EMPLOYER LOGIN PAGE
-# ==========================
+# -----------------------------
 
-if st.session_state.role == "employer" and not st.session_state.logged_in:
+
+if st.session_state.page == "employer_login":
 
 
     st.title("Employer Login")
 
 
-    username = st.text_input("User ID")
+    username = st.text_input(
+        "User ID"
+    )
 
 
     password = st.text_input(
@@ -143,7 +183,21 @@ if st.session_state.role == "employer" and not st.session_state.logged_in:
 
 
 
-    if st.button("Login"):
+    col1,col2 = st.columns(2)
+
+
+    with col1:
+
+        login = st.button("Login")
+
+
+    with col2:
+
+        back = st.button("Back")
+
+
+
+    if login:
 
 
         user = check_employer(
@@ -154,51 +208,118 @@ if st.session_state.role == "employer" and not st.session_state.logged_in:
 
         if user:
 
-            st.success("Login successful")
 
             st.session_state.logged_in = True
+
+            st.session_state.page = "dashboard"
 
             st.rerun()
 
 
         else:
 
-            st.error("Invalid username/password")
+            st.error(
+                "Invalid User ID or Password"
+            )
 
 
 
     st.divider()
 
 
-    # REGISTER BUTTON ONLY
 
-    if st.button("Register"):
+    if st.button(
+        "New Employer? Register Here"
+    ):
 
-        st.session_state.show_register = True
+        st.session_state.page = "register"
 
-
-
-    # SHOW REGISTRATION FORM ONLY AFTER CLICKING REGISTER
-
-    if st.session_state.show_register:
+        st.rerun()
 
 
-        st.subheader("Create New Employer Account")
+
+    if back:
+
+        st.session_state.page = "home"
+
+        st.rerun()
 
 
-        new_user = st.text_input(
-            "Create User ID"
+
+
+# -----------------------------
+# REGISTER PAGE
+# -----------------------------
+
+
+if st.session_state.page == "register":
+
+
+    st.title(
+        "Register New Employer"
+    )
+
+
+    new_user = st.text_input(
+        "Create User ID"
+    )
+
+
+    new_password = st.text_input(
+        "Create Password",
+        type="password"
+    )
+
+
+    confirm_password = st.text_input(
+        "Retype Password",
+        type="password"
+    )
+
+
+
+    col1,col2 = st.columns(2)
+
+
+
+    with col1:
+
+        register = st.button(
+            "Register"
         )
 
 
-        new_password = st.text_input(
-            "Create Password",
-            type="password"
+    with col2:
+
+        back_login = st.button(
+            "Login Existing User"
         )
 
 
 
-        if st.button("Create Account"):
+    if register:
+
+
+        if (
+            new_user == ""
+            or new_password == ""
+            or confirm_password == ""
+        ):
+
+            st.error(
+                "Please fill all fields."
+            )
+
+
+        elif new_password != confirm_password:
+
+
+            st.error(
+                "Passwords do not match."
+            )
+
+
+        else:
 
 
             result = register_employer(
@@ -209,29 +330,53 @@ if st.session_state.role == "employer" and not st.session_state.logged_in:
 
             if result:
 
-                st.success("Employer account created successfully!")
 
-                st.session_state.show_register = False
+                st.success(
+                    "Registration successful!"
+                )
+
+
+                st.session_state.page = "employer_login"
+
+                st.rerun()
+
 
 
             else:
 
-                st.error("Username already exists")
+
+                st.error(
+                    "User ID already exists."
+                )
+
+
+
+    if back_login:
+
+
+        st.session_state.page = "employer_login"
+
+        st.rerun()
 
 
 
 
-# ==========================
+# -----------------------------
 # EMPLOYER DASHBOARD
-# ==========================
-
-if st.session_state.logged_in:
+# -----------------------------
 
 
-    st.title("Employer Dashboard")
+if st.session_state.page == "dashboard":
 
 
-    st.subheader("Employee Records")
+    st.title(
+        "Employer Dashboard"
+    )
+
+
+    st.subheader(
+        "Employee Records"
+    )
 
 
     employees = get_all_employees()
@@ -244,4 +389,16 @@ if st.session_state.logged_in:
 
     else:
 
-        st.info("No employee records found.")
+        st.info(
+            "No employee records found."
+        )
+
+
+
+    if st.button("Logout"):
+
+        st.session_state.logged_in = False
+
+        st.session_state.page = "home"
+
+        st.rerun()

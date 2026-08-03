@@ -11,15 +11,11 @@ st.title("Employee Management System")
 
 if "role" not in st.session_state:
     st.session_state.role = None
-    if st.session_state.role is None:
-
-    
-
+if st.session_state.role is None:
     choice = st.radio(
         "Login as:",
-        ["Employee","Employer"]
+        ["Employee", "Employer"]
     )
-
 
     if choice == "Employee":
         if st.button("Continue as Employee"):

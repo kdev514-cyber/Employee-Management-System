@@ -96,3 +96,10 @@ def check_employer(username,password):
     conn.close()
 
     return result
+
+# -----------------------------
+# CREATE DATABASE TABLES
+# -----------------------------
+
+create_table()
+create_employer_table()

@@ -1,6 +1,8 @@
 import streamlit as st
 import re
 from database import *
+create_table()
+create_employer_table()
 
 
 # -----------------------------

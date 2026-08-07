@@ -1,25 +1,20 @@
 import sqlite3
 
 
-# ============================================================
-# DATABASE SETTINGS
-# ============================================================
-
 DATABASE_NAME = "employee.db"
 
 
-# ============================================================
+# =========================================================
 # DATABASE CONNECTION
-# ============================================================
+# =========================================================
 
 def create_connection():
-
     return sqlite3.connect(DATABASE_NAME)
 
 
-# ============================================================
+# =========================================================
 # CREATE EMPLOYEE TABLE
-# ============================================================
+# =========================================================
 
 def create_table():
 
@@ -41,9 +36,9 @@ def create_table():
     conn.close()
 
 
-# ============================================================
+# =========================================================
 # CREATE EMPLOYER TABLE
-# ============================================================
+# =========================================================
 
 def create_employer_table():
 
@@ -62,9 +57,9 @@ def create_employer_table():
     conn.close()
 
 
-# ============================================================
+# =========================================================
 # ADD EMPLOYEE
-# ============================================================
+# =========================================================
 
 def save_employee(
     name,
@@ -79,13 +74,7 @@ def save_employee(
 
     cursor.execute("""
         INSERT INTO employees
-        (
-            name,
-            age,
-            salary,
-            gender,
-            nationality
-        )
+        (name, age, salary, gender, nationality)
         VALUES (?, ?, ?, ?, ?)
     """, (
         name,
@@ -99,9 +88,9 @@ def save_employee(
     conn.close()
 
 
-# ============================================================
+# =========================================================
 # GET ALL EMPLOYEES
-# ============================================================
+# =========================================================
 
 def get_all_employees():
 
@@ -117,6 +106,7 @@ def get_all_employees():
             gender,
             nationality
         FROM employees
+        ORDER BY id
     """)
 
     employees = cursor.fetchall()
@@ -126,46 +116,14 @@ def get_all_employees():
     return employees
 
 
-# ============================================================
-# GET EMPLOYEE BY ID
-# ============================================================
-
-def get_employee_by_id(employee_id):
-
-    conn = create_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT
-            id,
-            name,
-            age,
-            salary,
-            gender,
-            nationality
-        FROM employees
-        WHERE id = ?
-    """, (employee_id,))
-
-    employee = cursor.fetchone()
-
-    conn.close()
-
-    return employee
-
-
-# ============================================================
+# =========================================================
 # SEARCH EMPLOYEES
-# ============================================================
+# =========================================================
 
 def search_employees(field, value):
 
     conn = create_connection()
     cursor = conn.cursor()
-
-    # -----------------------------------------
-    # SEARCH BY ID
-    # -----------------------------------------
 
     if field == "ID":
 
@@ -179,12 +137,8 @@ def search_employees(field, value):
                 nationality
             FROM employees
             WHERE id = ?
-        """, (value,))
+        """, (int(value),))
 
-
-    # -----------------------------------------
-    # SEARCH BY NAME
-    # -----------------------------------------
 
     elif field == "Name":
 
@@ -198,12 +152,9 @@ def search_employees(field, value):
                 nationality
             FROM employees
             WHERE name LIKE ?
+            ORDER BY id
         """, (f"%{value}%",))
 
-
-    # -----------------------------------------
-    # SEARCH BY AGE
-    # -----------------------------------------
 
     elif field == "Age":
 
@@ -217,12 +168,9 @@ def search_employees(field, value):
                 nationality
             FROM employees
             WHERE age = ?
-        """, (value,))
+            ORDER BY id
+        """, (int(value),))
 
-
-    # -----------------------------------------
-    # SEARCH BY SALARY
-    # -----------------------------------------
 
     elif field == "Salary":
 
@@ -236,12 +184,9 @@ def search_employees(field, value):
                 nationality
             FROM employees
             WHERE salary = ?
-        """, (value,))
+            ORDER BY id
+        """, (float(value),))
 
-
-    # -----------------------------------------
-    # SEARCH BY GENDER
-    # -----------------------------------------
 
     elif field == "Gender":
 
@@ -255,12 +200,9 @@ def search_employees(field, value):
                 nationality
             FROM employees
             WHERE gender = ?
+            ORDER BY id
         """, (value,))
 
-
-    # -----------------------------------------
-    # SEARCH BY NATIONALITY
-    # -----------------------------------------
 
     elif field == "Nationality":
 
@@ -274,7 +216,17 @@ def search_employees(field, value):
                 nationality
             FROM employees
             WHERE nationality LIKE ?
+            ORDER BY id
         """, (f"%{value}%",))
+
+
+    else:
+
+        employees = []
+
+        conn.close()
+
+        return employees
 
 
     employees = cursor.fetchall()
@@ -284,9 +236,9 @@ def search_employees(field, value):
     return employees
 
 
-# ============================================================
+# =========================================================
 # UPDATE EMPLOYEE
-# ============================================================
+# =========================================================
 
 def update_employee(
     employee_id,
@@ -302,14 +254,12 @@ def update_employee(
 
     cursor.execute("""
         UPDATE employees
-
         SET
             name = ?,
             age = ?,
             salary = ?,
             gender = ?,
             nationality = ?
-
         WHERE id = ?
     """, (
         name,
@@ -329,9 +279,9 @@ def update_employee(
     return rows_updated > 0
 
 
-# ============================================================
+# =========================================================
 # DELETE EMPLOYEE
-# ============================================================
+# =========================================================
 
 def delete_employee(employee_id):
 
@@ -352,14 +302,11 @@ def delete_employee(employee_id):
     return rows_deleted > 0
 
 
-# ============================================================
+# =========================================================
 # REGISTER EMPLOYER
-# ============================================================
+# =========================================================
 
-def register_employer(
-    username,
-    password
-):
+def register_employer(username, password):
 
     conn = create_connection()
     cursor = conn.cursor()
@@ -368,10 +315,7 @@ def register_employer(
 
         cursor.execute("""
             INSERT INTO employers
-            (
-                username,
-                password
-            )
+            (username, password)
             VALUES (?, ?)
         """, (
             username,
@@ -380,31 +324,31 @@ def register_employer(
 
         conn.commit()
 
+        conn.close()
+
         return True
+
 
     except sqlite3.IntegrityError:
 
-        return False
-
-    finally:
-
         conn.close()
 
+        return False
 
-# ============================================================
+
+# =========================================================
 # CHECK EMPLOYER LOGIN
-# ============================================================
+# =========================================================
 
-def check_employer(
-    username,
-    password
-):
+def check_employer(username, password):
 
     conn = create_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT *
+        SELECT
+            id,
+            username
         FROM employers
         WHERE username = ?
         AND password = ?

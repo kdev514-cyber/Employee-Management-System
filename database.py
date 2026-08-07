@@ -1,26 +1,12 @@
 import sqlite3
-
-
 DATABASE_NAME = "employee.db"
-
-
-# -----------------------------------
-# Create database connection
-# -----------------------------------
 
 def create_connection():
     return sqlite3.connect(DATABASE_NAME)
 
-
-# -----------------------------------
-# Create Employee Table
-# -----------------------------------
-
 def create_table():
-
     conn = create_connection()
     cursor = conn.cursor()
-
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS employees (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,13 +21,7 @@ def create_table():
     conn.commit()
     conn.close()
 
-
-# -----------------------------------
-# Create Employer Table
-# -----------------------------------
-
 def create_employer_table():
-
     conn = create_connection()
     cursor = conn.cursor()
 
@@ -56,13 +36,7 @@ def create_employer_table():
     conn.commit()
     conn.close()
 
-
-# -----------------------------------
-# Save Employee
-# -----------------------------------
-
 def save_employee(name, age, salary, gender, nationality):
-
     conn = create_connection()
     cursor = conn.cursor()
 
@@ -81,13 +55,7 @@ def save_employee(name, age, salary, gender, nationality):
     conn.commit()
     conn.close()
 
-
-# -----------------------------------
-# Get All Employees
-# -----------------------------------
-
 def get_all_employees():
-
     conn = create_connection()
     cursor = conn.cursor()
 
@@ -108,13 +76,7 @@ def get_all_employees():
 
     return employees
 
-
-# -----------------------------------
-# Register Employer
-# -----------------------------------
-
 def register_employer(username, password):
-
     conn = create_connection()
     cursor = conn.cursor()
 
@@ -141,13 +103,7 @@ def register_employer(username, password):
 
         conn.close()
 
-
-# -----------------------------------
-# Check Employer Login
-# -----------------------------------
-
 def check_employer(username, password):
-
     conn = create_connection()
     cursor = conn.cursor()
 

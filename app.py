@@ -12,161 +12,62 @@ from database import (
     register_employer,
     check_employer
 )
-
-
-# =========================================================
-# PAGE CONFIGURATION
-# =========================================================
-
+#Page Creation
 st.set_page_config(
     page_title="Employee Management System",
-    page_icon="👨‍💼",
     layout="centered"
 )
 
-
-# =========================================================
-# CREATE DATABASE TABLES
-# =========================================================
-
+#Database Creation
 create_table()
 create_employer_table()
 
-
-# =========================================================
-# PASSWORD VALIDATION
-# =========================================================
-
+#Password Validation
 def validate_password(password):
-
     if len(password) < 8:
-
         return False, "Password must contain at least 8 characters."
-
-
     if not re.search(r"[A-Z]", password):
-
         return False, "Password must contain at least one capital letter."
-
-
     if not re.search(r"[a-z]", password):
-
         return False, "Password must contain at least one small letter."
-
-
     if not re.search(r"[0-9]", password):
-
         return False, "Password must contain at least one number."
-
-
-    if not re.search(
-        r"[!@#$%^&*(),.?\":{}|<>]",
-        password
-    ):
-
+    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]",password):
         return False, "Password must contain at least one special character."
-
-
     return True, ""
 
-
-# =========================================================
-# SESSION STATE
-# =========================================================
-
+#Session Start
 if "page" not in st.session_state:
-
     st.session_state.page = "home"
-
-
 if "logged_in" not in st.session_state:
-
     st.session_state.logged_in = False
 
-
-# =========================================================
-# HOME PAGE
-# =========================================================
-
+#Home Page
 if st.session_state.page == "home":
+    st.title("Employee Management System")
+    st.write("Welcome! Please select how you want to continue.")
+    choice = st.radio("Login as:",["Employee","Employer"])
 
-    st.title("👨‍💼 Employee Management System")
-
-    st.write(
-        "Welcome! Please select how you want to continue."
-    )
-
-    choice = st.radio(
-        "Login as:",
-        [
-            "Employee",
-            "Employer"
-        ]
-    )
-
-
-    # -----------------------------------------------------
-    # EMPLOYEE
-    # -----------------------------------------------------
-
+    #As Employee
     if choice == "Employee":
-
-        if st.button(
-            "Continue as Employee",
-            use_container_width=True
-        ):
-
+        if st.button("Continue as Employee",use_container_width=True):
             st.session_state.page = "employee"
-
             st.rerun()
 
-
-    # -----------------------------------------------------
-    # EMPLOYER
-    # -----------------------------------------------------
-
+    #As Employer
     if choice == "Employer":
-
-        if st.button(
-            "Continue as Employer",
-            use_container_width=True
-        ):
-
+        if st.button("Continue as Employer",use_container_width=True):
             st.session_state.page = "employer_login"
-
             st.rerun()
 
-
-# =========================================================
-# EMPLOYEE PAGE
-# =========================================================
-
+#Employee Page
 if st.session_state.page == "employee":
-
     st.title("Employee Details")
-
-    st.write(
-        "Enter the employee information below."
-    )
-
-
-    name = st.text_input(
-        "Name"
-    )
-
-
-    age = st.text_input(
-        "Age"
-    )
-
-
-    salary = st.text_input(
-        "Salary"
-    )
-
-
-    gender = st.selectbox(
-        "Gender",
+    st.write("Enter the employee information below.")
+    name = st.text_input("Name")
+    age = st.text_input("Age")
+    salary = st.text_input("Salary")
+    gender = st.selectbox("Gender",
         [
             "Select Gender",
             "Male",
@@ -174,38 +75,16 @@ if st.session_state.page == "employee":
             "Other"
         ]
     )
-
-
-    nationality = st.text_input(
-        "Nationality"
-    )
-
+    nationality = st.text_input("Nationality")
 
     col1, col2 = st.columns(2)
-
-
     with col1:
-
-        save = st.button(
-            "💾 Save Employee",
-            use_container_width=True
-        )
-
-
+        save = st.button("Save Employee",use_container_width=True)
     with col2:
+        back = st.button("Back",use_container_width=True)
 
-        back = st.button(
-            "⬅️ Back",
-            use_container_width=True
-        )
-
-
-    # -----------------------------------------------------
-    # SAVE EMPLOYEE
-    # -----------------------------------------------------
-
+#Save Employee
     if save:
-
         if (
             name.strip() == ""
             or age.strip() == ""
@@ -213,35 +92,16 @@ if st.session_state.page == "employee":
             or nationality.strip() == ""
             or gender == "Select Gender"
         ):
-
-            st.error(
-                "Please fill all the required fields."
-            )
-
-
+            st.error("Please fill all the required fields.")
         else:
-
             try:
-
                 age_number = int(age)
-
                 salary_number = float(salary)
-
-
-                if age_number <= 0:
-
-                    st.error(
-                        "Age must be greater than 0."
-                    )
-
+                if age_number <= 18:
+                    st.error("Age must be greater than 18.")
                 elif salary_number < 0:
-
-                    st.error(
-                        "Salary cannot be negative."
-                    )
-
+                    st.error("Salary cannot be negative.")
                 else:
-
                     save_employee(
                         name.strip(),
                         age_number,
@@ -249,288 +109,101 @@ if st.session_state.page == "employee":
                         gender,
                         nationality.strip()
                     )
-
-
-                    st.success(
-                        "Employee saved successfully!"
-                    )
-
-
+                    st.success("Employee saved successfully!")
             except ValueError:
-
-                st.error(
-                    "Age must be a whole number and Salary must be a number."
-                )
-
-
-    # -----------------------------------------------------
-    # BACK
-    # -----------------------------------------------------
-
+                st.error("Age must be a whole number and Salary must be a number.")
     if back:
-
         st.session_state.page = "home"
-
         st.rerun()
 
-
-# =========================================================
-# EMPLOYER LOGIN PAGE
-# =========================================================
-
+#Employer Page
 if st.session_state.page == "employer_login":
-
-    st.title("🔐 Employer Login")
-
-
-    username = st.text_input(
-        "User ID"
-    )
-
-
-    password = st.text_input(
-        "Password",
-        type="password"
-    )
-
-
+    st.title("Employer Login")
+    username = st.text_input("User ID")
+    password = st.text_input("Password",type="password")
     col1, col2 = st.columns(2)
-
-
     with col1:
-
-        login = st.button(
-            "Login",
-            use_container_width=True
-        )
-
-
+        login = st.button("Login",use_container_width=True)
     with col2:
+        back = st.button("Back",use_container_width=True)
 
-        back = st.button(
-            "⬅️ Back",
-            use_container_width=True
-        )
-
-
-    # -----------------------------------------------------
-    # LOGIN
-    # -----------------------------------------------------
-
+#Login
     if login:
-
-        if (
-            username.strip() == ""
-            or password == ""
-        ):
-
-            st.error(
-                "Please enter User ID and Password."
-            )
-
+        if (username.strip() == "" or password == ""):
+            st.error("Please enter User ID and Password.")
         else:
-
-            user = check_employer(
-                username.strip(),
-                password
-            )
-
-
+            user = check_employer(username.strip(),password)
             if user:
-
                 st.session_state.logged_in = True
-
                 st.session_state.page = "dashboard"
-
                 st.rerun()
-
-
             else:
-
-                st.error(
-                    "Invalid User ID or Password."
-                )
-
-
+                st.error("Invalid User ID or Password.")
     st.divider()
 
-
-    # -----------------------------------------------------
-    # REGISTER
-    # -----------------------------------------------------
-
-    if st.button(
-        "New Employer? Register Here",
-        use_container_width=True
-    ):
-
+    #Register
+    if st.button("New Employer? Register Here",use_container_width=True):
         st.session_state.page = "register"
-
         st.rerun()
 
-
-    # -----------------------------------------------------
-    # BACK
-    # -----------------------------------------------------
-
+    #Back
     if back:
-
         st.session_state.page = "home"
-
         st.rerun()
 
-
-# =========================================================
-# EMPLOYER REGISTRATION PAGE
-# =========================================================
-
+#Registration Page
 if st.session_state.page == "register":
-
-    st.title("📝 Register New Employer")
-
-
-    new_user = st.text_input(
-        "Create User ID"
-    )
-
-
-    new_password = st.text_input(
-        "Create Password",
-        type="password"
-    )
-
-
-    confirm_password = st.text_input(
-        "Retype Password",
-        type="password"
-    )
-
-
+    st.title("Register New Employer")
+    new_user = st.text_input("Create User ID")
+    new_password = st.text_input("Create Password",type="password")
+    confirm_password = st.text_input("Retype Password",type="password")
     col1, col2 = st.columns(2)
-
-
     with col1:
-
-        register = st.button(
-            "Register",
-            use_container_width=True
-        )
-
-
+        register = st.button("Register",use_container_width=True)
     with col2:
+        login_existing = st.button("Login Existing User",use_container_width=True)
 
-        login_existing = st.button(
-            "Login Existing User",
-            use_container_width=True
-        )
-
-
-    # -----------------------------------------------------
-    # REGISTER
-    # -----------------------------------------------------
-
+#Register Check
     if register:
-
         if (
             new_user.strip() == ""
             or new_password == ""
             or confirm_password == ""
         ):
-
-            st.error(
-                "Please fill all fields."
-            )
-
-
+            st.error("Please fill all fields.")
         elif new_password != confirm_password:
-
-            st.error(
-                "Passwords do not match."
-            )
-
-
+            st.error("Passwords do not match.")
         else:
-
-            valid, message = validate_password(
-                new_password
-            )
-
-
+            valid, message = validate_password(new_password)
             if not valid:
-
                 st.error(message)
-
-
             else:
-
-                result = register_employer(
-                    new_user.strip(),
-                    new_password
-                )
-
-
+                result = register_employer( new_user.strip(),new_password)
                 if result:
-
-                    st.success(
-                        "Employer registered successfully!"
-                    )
-
-                    st.info(
-                        "Redirecting to login..."
-                    )
-
+                    st.success("Employer registered successfully!")
+                    st.info("Redirecting to login...")
                     st.session_state.page = "employer_login"
-
                     st.rerun()
-
-
                 else:
+                    st.error("User ID already exists.")
 
-                    st.error(
-                        "User ID already exists."
-                    )
-
-
-    # -----------------------------------------------------
-    # LOGIN EXISTING USER
-    # -----------------------------------------------------
-
+#Login Existing User
     if login_existing:
-
         st.session_state.page = "employer_login"
-
         st.rerun()
 
-
-# =========================================================
-# EMPLOYER DASHBOARD
-# =========================================================
-
+#Employer Dashboard
 if st.session_state.page == "dashboard":
 
     # Security check
-
     if not st.session_state.logged_in:
-
         st.session_state.page = "employer_login"
-
         st.rerun()
+    st.title("Employer Dashboard")
+    st.write("Manage employee records")
 
-
-    st.title("🏢 Employer Dashboard")
-
-
-    st.write(
-        "Manage employee records from the options below."
-    )
-
-
-    # =====================================================
-    # DASHBOARD MENU
-    # =====================================================
-
-    action = st.radio(
-        "Choose an action:",
+#Dasboard Menu
+    action = st.radio("Choose an action:",
         [
             "Get Employee Records",
             "Add Employee",
@@ -538,22 +211,11 @@ if st.session_state.page == "dashboard":
             "Delete Employee"
         ]
     )
-
-
     st.divider()
 
-
-    # =====================================================
-    # GET EMPLOYEE RECORDS
-    # =====================================================
-
+#Get Employee Records
     if action == "Get Employee Records":
-
-        st.subheader(
-            "📋 Get Employee Records"
-        )
-
-
+        st.subheader("Get Employee Records")
         search_option = st.selectbox(
             "Search by:",
             [
@@ -566,24 +228,10 @@ if st.session_state.page == "dashboard":
                 "Nationality"
             ]
         )
-
-
-        # -------------------------------------------------
-        # SHOW ALL
-        # -------------------------------------------------
-
         if search_option == "All":
-
-            if st.button(
-                "Get All Employee Records",
-                use_container_width=True
-            ):
-
+            if st.button("Get All Employee Records",use_container_width=True):
                 employees = get_all_employees()
-
-
                 if employees:
-
                     st.dataframe(
                         employees,
                         column_config={
@@ -596,96 +244,29 @@ if st.session_state.page == "dashboard":
                         },
                         use_container_width=True
                     )
-
                 else:
-
-                    st.info(
-                        "No employee records found."
-                    )
-
-
-        # -------------------------------------------------
-        # SEARCH
-        # -------------------------------------------------
-
+                    st.info("No employee records found.")
         else:
-
-            search_value = st.text_input(
-                f"Enter {search_option}:"
-            )
-
-
-            if st.button(
-                "🔍 Search",
-                use_container_width=True
-            ):
-
+            search_value = st.text_input(f"Enter {search_option}:")
+            if st.button("Search",use_container_width=True):
                 if search_value.strip() == "":
-
-                    st.error(
-                        "Please enter a search value."
-                    )
-
+                    st.error("Please enter a search value.")
                 else:
-
                     try:
-
-                        employees = search_employees(
-                            search_option,
-                            search_value.strip()
-                        )
-
-
+                        employees = search_employees(search_option,search_value.strip())
                         if employees:
-
-                            st.dataframe(
-                                employees,
-                                use_container_width=True
-                            )
-
+                            st.dataframe(employees,use_container_width=True)
                         else:
-
-                            st.warning(
-                                "No matching employee found."
-                            )
-
-
+                            st.warning("No matching employee found.")
                     except ValueError:
+                        st.error(f"{search_option} must contain a valid number.")
 
-                        st.error(
-                            f"{search_option} must contain a valid number."
-                        )
-
-
-    # =====================================================
-    # ADD EMPLOYEE
-    # =====================================================
-
+    #Add Employee
     elif action == "Add Employee":
-
-        st.subheader(
-            "➕ Add Employee"
-        )
-
-
-        add_name = st.text_input(
-            "Name",
-            key="add_name"
-        )
-
-
-        add_age = st.text_input(
-            "Age",
-            key="add_age"
-        )
-
-
-        add_salary = st.text_input(
-            "Salary",
-            key="add_salary"
-        )
-
-
+        st.subheader("Add Employee")
+        add_name = st.text_input("Name",key="add_name")
+        add_age = st.text_input("Age",key="add_age")
+        add_salary = st.text_input("Salary",key="add_salary")
         add_gender = st.selectbox(
             "Gender",
             [
@@ -696,19 +277,8 @@ if st.session_state.page == "dashboard":
             ],
             key="add_gender"
         )
-
-
-        add_nationality = st.text_input(
-            "Nationality",
-            key="add_nationality"
-        )
-
-
-        if st.button(
-            "💾 Add Employee",
-            use_container_width=True
-        ):
-
+        add_nationality = st.text_input("Nationality",key="add_nationality")
+        if st.button("Add Employee",use_container_width=True):
             if (
                 add_name.strip() == ""
                 or add_age.strip() == ""
@@ -716,34 +286,16 @@ if st.session_state.page == "dashboard":
                 or add_nationality.strip() == ""
                 or add_gender == "Select Gender"
             ):
-
-                st.error(
-                    "Please fill all fields."
-                )
-
+                st.error("Please fill all fields.")
             else:
-
                 try:
-
                     age_number = int(add_age)
-
                     salary_number = float(add_salary)
-
-
                     if age_number <= 0:
-
-                        st.error(
-                            "Age must be greater than 0."
-                        )
-
+                        st.error("Age must be greater than 0.")
                     elif salary_number < 0:
-
-                        st.error(
-                            "Salary cannot be negative."
-                        )
-
+                        st.error("Salary cannot be negative.")
                     else:
-
                         save_employee(
                             add_name.strip(),
                             age_number,
@@ -751,18 +303,9 @@ if st.session_state.page == "dashboard":
                             add_gender,
                             add_nationality.strip()
                         )
-
-
-                        st.success(
-                            "Employee added successfully!"
-                        )
-
-
+                        st.success("Employee added successfully!")
                 except ValueError:
-
-                    st.error(
-                        "Age must be a whole number and Salary must be a number."
-                    )
+                    st.error("Age must be a whole number and Salary must be a number.")
 
 
     # =====================================================
@@ -1016,7 +559,7 @@ if st.session_state.page == "dashboard":
     elif action == "Delete Employee":
 
         st.subheader(
-            "🗑️ Delete Employee"
+            "Delete Employee"
         )
 
 
@@ -1125,7 +668,7 @@ if st.session_state.page == "dashboard":
 
 
             st.warning(
-                "⚠️ Deleting an employee is permanent."
+                "Deleting an employee is permanent."
             )
 
 
@@ -1135,7 +678,7 @@ if st.session_state.page == "dashboard":
 
 
             if st.button(
-                "🗑️ Delete Employee",
+                "Delete Employee",
                 use_container_width=True
             ):
 
@@ -1178,7 +721,7 @@ if st.session_state.page == "dashboard":
 
 
     if st.button(
-        "🚪 Logout",
+        "Logout",
         use_container_width=True
     ):
 

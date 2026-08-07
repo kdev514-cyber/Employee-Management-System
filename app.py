@@ -322,7 +322,6 @@ if st.session_state.page == "dashboard":
         search_option = st.selectbox(
             "Find employee by:",
             [
-                "All"
                 "ID",
                 "Name",
                 "Age",
@@ -567,7 +566,6 @@ if st.session_state.page == "dashboard":
         search_option = st.selectbox(
             "Find employee by:",
             [
-                "All"
                 "ID",
                 "Name",
                 "Age",

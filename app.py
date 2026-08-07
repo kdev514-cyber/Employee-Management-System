@@ -315,13 +315,14 @@ if st.session_state.page == "dashboard":
     elif action == "Edit Employee":
 
         st.subheader(
-            "✏️ Edit Employee"
+            "Edit Employee"
         )
 
 
         search_option = st.selectbox(
             "Find employee by:",
             [
+                "All"
                 "ID",
                 "Name",
                 "Age",
@@ -340,7 +341,7 @@ if st.session_state.page == "dashboard":
 
 
         if st.button(
-            "🔍 Find Employee",
+            "Find Employee",
             use_container_width=True
         ):
 
@@ -479,7 +480,7 @@ if st.session_state.page == "dashboard":
 
 
             if st.button(
-                "💾 Update Employee",
+                "Update Employee",
                 use_container_width=True
             ):
 
@@ -566,6 +567,7 @@ if st.session_state.page == "dashboard":
         search_option = st.selectbox(
             "Find employee by:",
             [
+                "All"
                 "ID",
                 "Name",
                 "Age",
@@ -584,7 +586,7 @@ if st.session_state.page == "dashboard":
 
 
         if st.button(
-            "🔍 Find Employee",
+            "Find Employee",
             use_container_width=True
         ):
 

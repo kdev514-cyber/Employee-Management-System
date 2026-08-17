@@ -1,6 +1,21 @@
 import streamlit as st
 import re
+import io
+import smtplib
 
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import cm
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Table,
+    TableStyle,
+    Paragraph,
+    Spacer
+)
+
+from email.message import EmailMessage
 from database import (
     create_table,
     create_employer_table,
@@ -21,6 +36,84 @@ st.set_page_config(
 #Database Creation
 create_table()
 create_employer_table()
+
+def generate_employee_pdf(employees):
+    pdf_buffer = io.BytesIO()
+    document = SimpleDocTemplate(
+        pdf_buffer,
+        pagesize=A4,
+        rightMargin=1.5 * cm,
+        leftMargin=1.5 * cm,
+        topMargin=1.5 * cm,
+        bottomMargin=1.5 * cm)
+    styles = getSampleStyleSheet()
+    title = styles["Title"]
+    normal = styles["Normal"]
+    elements = []
+
+    # Title
+    elements.append(Paragraph("Employee Management System",title))
+    elements.append(Spacer(1, 0.3 * cm))
+    elements.append(Paragraph("Employee Records Report",styles["Heading2"]))
+    elements.append(Spacer(1, 0.5 * cm))
+
+    # Table header
+    data = [["ID","Name","Age","Salary","Gender","Nationality"]]
+
+    # Add employee records
+    for employee in employees:
+        data.append([
+            str(employee[0]),
+            str(employee[1]),
+            str(employee[2]),
+            f"${employee[3]:,.2f}",
+            str(employee[4]),
+            str(employee[5])])
+
+    # Create table
+    table = Table(data,repeatRows=1,colWidths=[1.0 * cm,4.0 * cm,1.2 * cm,2.8 * cm,2.5 * cm,3.5 * cm])
+
+    # Table formatting
+    table.setStyle(TableStyle([("BACKGROUND",(0, 0),(-1, 0),colors.grey),("TEXTCOLOR",(0, 0),(-1, 0),colors.white),("FONTNAME",(0, 0),(-1, 0),"Helvetica-Bold"),
+            ("ALIGN",(0, 0),(0, -1),"CENTER"),("ALIGN",(2, 1),(3, -1),"CENTER"),("GRID",(0, 0),(-1, -1),0.5,colors.black),("VALIGN",(0, 0),(-1, -1),"MIDDLE"),
+            ("FONTNAME",(0, 1),(-1, -1),"Helvetica"),("FONTSIZE",(0, 0),(-1, -1),8),("ROWBACKGROUNDS",(0, 1),(-1, -1),[colors.white, colors.lightgrey]),
+            ("TOPPADDING",(0, 0),(-1, -1),6),("BOTTOMPADDING",(0, 0),(-1, -1),6)]))
+    elements.append(table)
+    elements.append(Spacer(1, 0.5 * cm))
+    elements.append(Paragraph(f"Total Employees: {len(employees)}",normal))
+
+    # Generate PDF
+    document.build(elements)
+    pdf_buffer.seek(0)
+    return pdf_buffer.getvalue()
+
+def send_pdf_email(pdf_data, filename):
+    sender_email = st.secrets["EMAIL_ADDRESS"]
+    sender_password = st.secrets["EMAIL_PASSWORD"]
+    receiver_email = st.secrets["REPORT_EMAIL"]
+    message = EmailMessage()
+    message["Subject"] = "Employee Records Report"
+    message["From"] = sender_email
+    message["To"] = receiver_email
+    message.set_content(
+        """
+Hello,
+
+Please find attached the latest Employee Records Report.
+
+This report was automatically generated from the Employee Management System.
+
+Regards,
+Employee Management System
+"""
+    )
+    message.add_attachment(pdf_data,maintype="application",subtype="pdf",filename=filename)
+
+    # Gmail SMTP
+    with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        server.starttls()
+        server.login(sender_email,sender_password)
+        server.send_message(message)
 
 #Password Validation
 def validate_password(password):
@@ -203,14 +296,16 @@ if st.session_state.page == "dashboard":
     st.write("Manage employee records")
 
 #Dasboard Menu
-    action = st.radio("Choose an action:",
-        [
-            "Get Employee Records",
-            "Add Employee",
-            "Edit Employee",
-            "Delete Employee"
-        ]
-    )
+    action = st.radio(
+    "Choose an action:",
+    [
+        "Get Employee Records",
+        "Add Employee",
+        "Edit Employee",
+        "Delete Employee",
+        "Generate PDF Report"
+    ]
+)
     st.divider()
 
 #Get Employee Records
@@ -622,7 +717,67 @@ if st.session_state.page == "dashboard":
                     st.error(
                         f"{search_option} must contain a valid number."
                     )
+# =====================================================
+# GENERATE PDF REPORT
+# =====================================================
 
+elif action == "Generate PDF Report":
+
+    st.subheader("Generate Employee PDF Report")
+
+    st.write(
+        "Generate a PDF containing all employee records "
+        "and automatically send it to the configured email address."
+    )
+
+    if st.button(
+        "Generate PDF & Send to Email",
+        use_container_width=True
+    ):
+
+        employees = get_all_employees()
+
+        if not employees:
+
+            st.warning(
+                "There are no employee records to include in the report."
+            )
+
+        else:
+
+            try:
+
+                # Generate PDF
+                pdf_data = generate_employee_pdf(
+                    employees
+                )
+
+                filename = "employee_records_report.pdf"
+
+                # Send email
+                send_pdf_email(
+                    pdf_data,
+                    filename
+                )
+
+                st.success(
+                    "PDF generated and sent successfully!"
+                )
+
+                # Allow employer to download it
+                st.download_button(
+                    label="Download PDF",
+                    data=pdf_data,
+                    file_name=filename,
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+
+            except Exception as e:
+
+                st.error(
+                    f"Failed to generate or send the PDF: {e}"
+                )
 
         # -------------------------------------------------
         # SELECT EMPLOYEE TO DELETE

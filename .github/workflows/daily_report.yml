@@ -2,7 +2,7 @@ name: Daily Employee PDF Report
 
 on:
   schedule:
-    - cron: "0 8 * * *"
+    - cron: "10 16 * * *"
       timezone: "Pacific/Auckland"
 
   workflow_dispatch:

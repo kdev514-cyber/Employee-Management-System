@@ -20,7 +20,9 @@ supabase = create_client(
 # =========================================================
 
 def create_table():
-    # Table is already created in Supabase
+
+    # The employees table is created in Supabase.
+    # Nothing needs to be created from Python.
     pass
 
 
@@ -29,7 +31,9 @@ def create_table():
 # =========================================================
 
 def create_employer_table():
-    # Table is already created in Supabase
+
+    # The employers table is created in Supabase.
+    # Nothing needs to be created from Python.
     pass
 
 
@@ -109,6 +113,7 @@ def search_employees(field, value):
         )
     )
 
+    # Search by ID
     if field == "ID":
 
         query = query.eq(
@@ -116,6 +121,7 @@ def search_employees(field, value):
             int(value)
         )
 
+    # Search by Name
     elif field == "Name":
 
         query = query.ilike(
@@ -123,6 +129,7 @@ def search_employees(field, value):
             f"%{value}%"
         )
 
+    # Search by Age
     elif field == "Age":
 
         query = query.eq(
@@ -130,6 +137,7 @@ def search_employees(field, value):
             int(value)
         )
 
+    # Search by Salary
     elif field == "Salary":
 
         query = query.eq(
@@ -137,6 +145,7 @@ def search_employees(field, value):
             float(value)
         )
 
+    # Search by Gender
     elif field == "Gender":
 
         query = query.eq(
@@ -144,6 +153,7 @@ def search_employees(field, value):
             value
         )
 
+    # Search by Nationality
     elif field == "Nationality":
 
         query = query.ilike(
@@ -257,7 +267,11 @@ def register_employer(
 
         return len(response.data) > 0
 
-    except Exception:
+    except Exception as e:
+
+        st.error(
+            f"Supabase employer registration error: {e}"
+        )
 
         return False
 
@@ -271,30 +285,40 @@ def check_employer(
     password
 ):
 
-    response = (
-        supabase
-        .table("employers")
-        .select(
-            "id, username"
-        )
-        .eq(
-            "username",
-            username
-        )
-        .eq(
-            "password",
-            password
-        )
-        .execute()
-    )
+    try:
 
-    if response.data:
-
-        employer = response.data[0]
-
-        return (
-            employer["id"],
-            employer["username"]
+        response = (
+            supabase
+            .table("employers")
+            .select(
+                "id, username"
+            )
+            .eq(
+                "username",
+                username
+            )
+            .eq(
+                "password",
+                password
+            )
+            .execute()
         )
 
-    return None
+        if response.data:
+
+            employer = response.data[0]
+
+            return (
+                employer["id"],
+                employer["username"]
+            )
+
+        return None
+
+    except Exception as e:
+
+        st.error(
+            f"Supabase login error: {e}"
+        )
+
+        return None

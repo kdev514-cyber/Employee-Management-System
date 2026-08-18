@@ -252,17 +252,31 @@ def generate_employee_pdf(employees):
 # =========================================================
 
 def send_pdf_email(pdf_data, filename):
+def send_pdf_email(pdf_data, filename):
 
     sender_email = st.secrets["EMAIL_ADDRESS"]
     sender_password = st.secrets["EMAIL_PASSWORD"]
     email1 = st.secrets["REPORT_EMAIL_1"]
     email2 = st.secrets["REPORT_EMAIL_2"]
     cc_email = st.secrets["REPORT_EMAIL_CC"]
-    
     message = EmailMessage()
     message["Subject"] = "Employee Records Report"
     message["From"] = sender_email
     message["To"] = f"{email1}, {email2}"
+    message["Cc"] = cc_email
+    message.set_content(
+        "Please find attached the Employee Records Report."
+    )
+    message.add_attachment(
+        pdf_data,
+        maintype="application",
+        subtype="pdf",
+        filename=filename
+    )
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+        smtp.login(sender_email, sender_password)
+        smtp.send_message(message)
+    
 
     # Two recipients
     message["Cc"] = cc_email

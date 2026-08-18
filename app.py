@@ -810,7 +810,7 @@ if st.session_state.page == "dashboard":
 # GENERATE PDF REPORT
 # =====================================================
 
-elif action == "Generate PDF Report":
+    elif action == "Generate PDF Report":
 
     st.subheader("Generate Employee PDF Report")
 

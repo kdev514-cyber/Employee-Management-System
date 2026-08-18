@@ -1,9 +1,10 @@
 import io
 import smtplib
-import sqlite3
 import os
 
 from email.message import EmailMessage
+
+from supabase import create_client
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -19,26 +20,46 @@ from reportlab.platypus import (
 
 
 # =========================================================
-# DATABASE
+# SUPABASE CONNECTION
 # =========================================================
 
-DATABASE_NAME = "employee.db"
+SUPABASE_URL = os.environ["SUPABASE_URL"]
+SUPABASE_KEY = os.environ["SUPABASE_KEY"]
 
+supabase = create_client(
+    SUPABASE_URL,
+    SUPABASE_KEY
+)
+
+
+# =========================================================
+# GET EMPLOYEES FROM SUPABASE
+# =========================================================
 
 def get_all_employees():
 
-    connection = sqlite3.connect(DATABASE_NAME)
+    response = (
+        supabase
+        .table("employees")
+        .select(
+            "id, name, age, salary, gender, nationality"
+        )
+        .order("id")
+        .execute()
+    )
 
-    cursor = connection.cursor()
+    employees = []
 
-    cursor.execute("""
-        SELECT id, name, age, salary, gender, nationality
-        FROM employees
-    """)
+    for employee in response.data:
 
-    employees = cursor.fetchall()
-
-    connection.close()
+        employees.append([
+            employee["id"],
+            employee["name"],
+            employee["age"],
+            employee["salary"],
+            employee["gender"],
+            employee["nationality"]
+        ])
 
     return employees
 
@@ -64,6 +85,10 @@ def generate_employee_pdf(employees):
 
     elements = []
 
+    # -----------------------------------------------------
+    # TITLE
+    # -----------------------------------------------------
+
     elements.append(
         Paragraph(
             "Employee Management System",
@@ -86,6 +111,10 @@ def generate_employee_pdf(employees):
         Spacer(1, 0.5 * cm)
     )
 
+    # -----------------------------------------------------
+    # TABLE HEADER
+    # -----------------------------------------------------
+
     data = [[
         "ID",
         "Name",
@@ -95,16 +124,24 @@ def generate_employee_pdf(employees):
         "Nationality"
     ]]
 
+    # -----------------------------------------------------
+    # EMPLOYEE DATA
+    # -----------------------------------------------------
+
     for employee in employees:
 
         data.append([
             str(employee[0]),
             str(employee[1]),
             str(employee[2]),
-            f"${employee[3]:,.2f}",
+            f"${float(employee[3]):,.2f}",
             str(employee[4]),
             str(employee[5])
         ])
+
+    # -----------------------------------------------------
+    # CREATE TABLE
+    # -----------------------------------------------------
 
     table = Table(
         data,
@@ -118,6 +155,10 @@ def generate_employee_pdf(employees):
             3.5 * cm
         ]
     )
+
+    # -----------------------------------------------------
+    # TABLE STYLE
+    # -----------------------------------------------------
 
     table.setStyle(
         TableStyle([
@@ -202,6 +243,7 @@ def generate_employee_pdf(employees):
                 (-1, -1),
                 6
             )
+
         ])
     )
 
@@ -211,12 +253,20 @@ def generate_employee_pdf(employees):
         Spacer(1, 0.5 * cm)
     )
 
+    # -----------------------------------------------------
+    # TOTAL EMPLOYEES
+    # -----------------------------------------------------
+
     elements.append(
         Paragraph(
             f"Total Employees: {len(employees)}",
             styles["Normal"]
         )
     )
+
+    # -----------------------------------------------------
+    # BUILD PDF
+    # -----------------------------------------------------
 
     document.build(elements)
 
@@ -226,40 +276,64 @@ def generate_employee_pdf(employees):
 
 
 # =========================================================
-# SEND EMAIL
+# SEND PDF EMAIL
 # =========================================================
 
 def send_pdf_email(pdf_data, filename):
 
     sender_email = os.environ["EMAIL_ADDRESS"]
+
     sender_password = os.environ["EMAIL_PASSWORD"]
 
     recipient_1 = os.environ["REPORT_EMAIL_1"]
+
     recipient_2 = os.environ["REPORT_EMAIL_2"]
+
     cc_email = os.environ["REPORT_EMAIL_CC"]
+
+
+    # -----------------------------------------------------
+    # CREATE EMAIL
+    # -----------------------------------------------------
 
     message = EmailMessage()
 
-    message["Subject"] = "Daily Employee Records Report"
+    message["Subject"] = (
+        "Daily Employee Records Report"
+    )
 
     message["From"] = sender_email
 
-    message["To"] = f"{recipient_1}, {recipient_2}"
+    message["To"] = (
+        f"{recipient_1}, {recipient_2}"
+    )
 
     message["Cc"] = cc_email
+
+
+    # -----------------------------------------------------
+    # EMAIL BODY
+    # -----------------------------------------------------
 
     message.set_content(
         """
 Hello,
 
-Please find attached the latest daily Employee Records Report.
+Please find attached the latest daily
+Employee Records Report.
 
-This report was automatically generated at 8:00 AM.
+This report was automatically generated
+at 8:00 AM.
 
 Regards,
 Employee Management System
 """
     )
+
+
+    # -----------------------------------------------------
+    # ATTACH PDF
+    # -----------------------------------------------------
 
     message.add_attachment(
         pdf_data,
@@ -267,6 +341,11 @@ Employee Management System
         subtype="pdf",
         filename=filename
     )
+
+
+    # -----------------------------------------------------
+    # SEND USING GMAIL
+    # -----------------------------------------------------
 
     with smtplib.SMTP_SSL(
         "smtp.gmail.com",
@@ -278,7 +357,9 @@ Employee Management System
             sender_password
         )
 
-        smtp.send_message(message)
+        smtp.send_message(
+            message
+        )
 
 
 # =========================================================
@@ -287,35 +368,64 @@ Employee Management System
 
 def main():
 
-    print("Starting daily employee report...")
+    print(
+        "Starting daily employee report..."
+    )
+
+
+    # -----------------------------------------------------
+    # GET EMPLOYEES FROM SUPABASE
+    # -----------------------------------------------------
 
     employees = get_all_employees()
 
+
     if not employees:
 
-        print("No employee records found.")
+        print(
+            "No employee records found in Supabase."
+        )
 
         return
 
+
     print(
-        f"Found {len(employees)} employee records."
+        f"Found {len(employees)} employee records in Supabase."
     )
+
+
+    # -----------------------------------------------------
+    # GENERATE PDF
+    # -----------------------------------------------------
 
     pdf_data = generate_employee_pdf(
         employees
     )
 
-    filename = "daily_employee_records_report.pdf"
+
+    filename = (
+        "daily_employee_records_report.pdf"
+    )
+
+
+    # -----------------------------------------------------
+    # SEND EMAIL
+    # -----------------------------------------------------
 
     send_pdf_email(
         pdf_data,
         filename
     )
 
+
     print(
         "PDF generated and email sent successfully."
     )
 
+
+# =========================================================
+# RUN PROGRAM
+# =========================================================
 
 if __name__ == "__main__":
 

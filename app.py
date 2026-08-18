@@ -717,67 +717,6 @@ if st.session_state.page == "dashboard":
                     st.error(
                         f"{search_option} must contain a valid number."
                     )
-# =====================================================
-# GENERATE PDF REPORT
-# =====================================================
-
-elif action == "Generate PDF Report":
-
-    st.subheader("Generate Employee PDF Report")
-
-    st.write(
-        "Generate a PDF containing all employee records "
-        "and automatically send it to the configured email address."
-    )
-
-    if st.button(
-        "Generate PDF & Send to Email",
-        use_container_width=True
-    ):
-
-        employees = get_all_employees()
-
-        if not employees:
-
-            st.warning(
-                "There are no employee records to include in the report."
-            )
-
-        else:
-
-            try:
-
-                # Generate PDF
-                pdf_data = generate_employee_pdf(
-                    employees
-                )
-
-                filename = "employee_records_report.pdf"
-
-                # Send email
-                send_pdf_email(
-                    pdf_data,
-                    filename
-                )
-
-                st.success(
-                    "PDF generated and sent successfully!"
-                )
-
-                # Allow employer to download it
-                st.download_button(
-                    label="Download PDF",
-                    data=pdf_data,
-                    file_name=filename,
-                    mime="application/pdf",
-                    use_container_width=True
-                )
-
-            except Exception as e:
-
-                st.error(
-                    f"Failed to generate or send the PDF: {e}"
-                )
 
         # -------------------------------------------------
         # SELECT EMPLOYEE TO DELETE
@@ -867,6 +806,67 @@ elif action == "Generate PDF Report":
                             "Employee could not be deleted."
                         )
 
+# =====================================================
+# GENERATE PDF REPORT
+# =====================================================
+
+elif action == "Generate PDF Report":
+
+    st.subheader("Generate Employee PDF Report")
+
+    st.write(
+        "Generate a PDF containing all employee records "
+        "and automatically send it to the configured email address."
+    )
+
+    if st.button(
+        "Generate PDF & Send to Email",
+        use_container_width=True
+    ):
+
+        employees = get_all_employees()
+
+        if not employees:
+
+            st.warning(
+                "There are no employee records to include in the report."
+            )
+
+        else:
+
+            try:
+
+                # Generate PDF
+                pdf_data = generate_employee_pdf(
+                    employees
+                )
+
+                filename = "employee_records_report.pdf"
+
+                # Send email
+                send_pdf_email(
+                    pdf_data,
+                    filename
+                )
+
+                st.success(
+                    "PDF generated and sent successfully!"
+                )
+
+                # Allow employer to download it
+                st.download_button(
+                    label="Download PDF",
+                    data=pdf_data,
+                    file_name=filename,
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+
+            except Exception as e:
+
+                st.error(
+                    f"Failed to generate or send the PDF: {e}"
+                )
 
     # =====================================================
     # LOGOUT

@@ -2,7 +2,7 @@ name: Daily Employee PDF Report
 
 on:
   schedule:
-    - cron: "0 16 * * *"
+    - cron: "0 8 * * *"
       timezone: "Pacific/Auckland"
 
   workflow_dispatch:
@@ -28,8 +28,12 @@ jobs:
 
       - name: Generate and send daily report
         env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+
           EMAIL_ADDRESS: ${{ secrets.EMAIL_ADDRESS }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+
           REPORT_EMAIL_1: ${{ secrets.REPORT_EMAIL_1 }}
           REPORT_EMAIL_2: ${{ secrets.REPORT_EMAIL_2 }}
           REPORT_EMAIL_CC: ${{ secrets.REPORT_EMAIL_CC }}

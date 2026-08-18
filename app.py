@@ -254,19 +254,17 @@ def generate_employee_pdf(employees):
 def send_pdf_email(pdf_data, filename):
 
     sender_email = st.secrets["EMAIL_ADDRESS"]
-
     sender_password = st.secrets["EMAIL_PASSWORD"]
-
-    receiver_email_1 = st.secrets["REPORT_EMAIL_1"]
-    receiver_email_2 = st.secrets["REPORT_EMAIL_2"]
-    receiver_email_3 = st.secrets["REPORT_EMAIL_3"]
+    email1 = st.secrets["REPORT_EMAIL_1"]
+    email2 = st.secrets["REPORT_EMAIL_2"]
+    cc_email = st.secrets["REPORT_EMAIL_CC"]
+    
     message = EmailMessage()
     message["Subject"] = "Employee Records Report"
     message["From"] = sender_email
-    message["To"] = f"{receiver_email_1}, {receiver_email_2}"
+    message["To"] = f"{email1}, {email2}"
 
-       # Two recipients
-    message["To"] = receiver_email_1
+    # Two recipients
     message["Cc"] = receiver_email_3
 
     message.set_content(

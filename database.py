@@ -1,40 +1,343 @@
-import sqlite3
-
-
-DATABASE_NAME = "employee.db"
-
-
-# =========================================================
-# DATABASE CONNECTION
-# =========================================================
-
-def create_connection():
-    return sqlite3.connect(DATABASE_NAME)
+import streamlit as st
+from supabase import create_client
 
 
 # =========================================================
-# CREATE EMPLOYEE TABLE
+# SUPABASE CONNECTION
+# =========================================================
+
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+
+supabase = create_client(
+    SUPABASE_URL,
+    SUPABASE_KEY
+)
+
+
+# =========================================================
+# CREATE TABLE
 # =========================================================
 
 def create_table():
+    """
+    Supabase tables are created from the Supabase dashboard.
+    Nothing needs to be created here.
+    """
+    pass
 
-    conn = create_connection()
-    cursor = conn.cursor()
 
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS employees (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            age INTEGER NOT NULL,
-            salary REAL NOT NULL,
-            gender TEXT NOT NULL,
-            nationality TEXT NOT NULL
+# =========================================================
+# CREATE EMPLOYER TABLE
+# =========================================================
+
+def create_employer_table():
+    """
+    Supabase tables are created from the Supabase dashboard.
+    Nothing needs to be created here.
+    """
+    pass
+
+
+# =========================================================
+# ADD EMPLOYEE
+# =========================================================
+
+def save_employee(
+    name,
+    age,
+    salary,
+    gender,
+    nationality
+):
+
+    data = {
+        "name": name,
+        "age": age,
+        "salary": salary,
+        "gender": gender,
+        "nationality": nationality
+    }
+
+    response = (
+        supabase
+        .table("employees")
+        .insert(data)
+        .execute()
+    )
+
+    return response.data
+
+
+# =========================================================
+# GET ALL EMPLOYEES
+# =========================================================
+
+def get_all_employees():
+
+    response = (
+        supabase
+        .table("employees")
+        .select(
+            "id, name, age, salary, gender, nationality"
         )
-    """)
+        .order(
+            "id"
+        )
+        .execute()
+    )
 
-    conn.commit()
-    conn.close()
+    employees = []
 
+    for employee in response.data:
+
+        employees.append([
+            employee["id"],
+            employee["name"],
+            employee["age"],
+            employee["salary"],
+            employee["gender"],
+            employee["nationality"]
+        ])
+
+    return employees
+
+
+# =========================================================
+# SEARCH EMPLOYEES
+# =========================================================
+
+def search_employees(field, value):
+
+    query = (
+        supabase
+        .table("employees")
+        .select(
+            "id, name, age, salary, gender, nationality"
+        )
+    )
+
+    # -----------------------------------------------------
+    # SEARCH BY ID
+    # -----------------------------------------------------
+
+    if field == "ID":
+
+        query = query.eq(
+            "id",
+            int(value)
+        )
+
+
+    # -----------------------------------------------------
+    # SEARCH BY NAME
+    # -----------------------------------------------------
+
+    elif field == "Name":
+
+        query = query.ilike(
+            "name",
+            f"%{value}%"
+        )
+
+
+    # -----------------------------------------------------
+    # SEARCH BY AGE
+    # -----------------------------------------------------
+
+    elif field == "Age":
+
+        query = query.eq(
+            "age",
+            int(value)
+        )
+
+
+    # -----------------------------------------------------
+    # SEARCH BY SALARY
+    # -----------------------------------------------------
+
+    elif field == "Salary":
+
+        query = query.eq(
+            "salary",
+            float(value)
+        )
+
+
+    # -----------------------------------------------------
+    # SEARCH BY GENDER
+    # -----------------------------------------------------
+
+    elif field == "Gender":
+
+        query = query.eq(
+            "gender",
+            value
+        )
+
+
+    # -----------------------------------------------------
+    # SEARCH BY NATIONALITY
+    # -----------------------------------------------------
+
+    elif field == "Nationality":
+
+        query = query.ilike(
+            "nationality",
+            f"%{value}%"
+        )
+
+
+    else:
+
+        return []
+
+
+    response = (
+        query
+        .order("id")
+        .execute()
+    )
+
+    employees = []
+
+    for employee in response.data:
+
+        employees.append([
+            employee["id"],
+            employee["name"],
+            employee["age"],
+            employee["salary"],
+            employee["gender"],
+            employee["nationality"]
+        ])
+
+    return employees
+
+
+# =========================================================
+# UPDATE EMPLOYEE
+# =========================================================
+
+def update_employee(
+    employee_id,
+    name,
+    age,
+    salary,
+    gender,
+    nationality
+):
+
+    data = {
+        "name": name,
+        "age": age,
+        "salary": salary,
+        "gender": gender,
+        "nationality": nationality
+    }
+
+    response = (
+        supabase
+        .table("employees")
+        .update(data)
+        .eq(
+            "id",
+            employee_id
+        )
+        .execute()
+    )
+
+    return len(response.data) > 0
+
+
+# =========================================================
+# DELETE EMPLOYEE
+# =========================================================
+
+def delete_employee(employee_id):
+
+    response = (
+        supabase
+        .table("employees")
+        .delete()
+        .eq(
+            "id",
+            employee_id
+        )
+        .execute()
+    )
+
+    return len(response.data) > 0
+
+
+# =========================================================
+# REGISTER EMPLOYER
+# =========================================================
+
+def register_employer(
+    username,
+    password
+):
+
+    try:
+
+        data = {
+            "username": username,
+            "password": password
+        }
+
+        response = (
+            supabase
+            .table("employers")
+            .insert(data)
+            .execute()
+        )
+
+        return len(response.data) > 0
+
+
+    except Exception:
+
+        return False
+
+
+# =========================================================
+# CHECK EMPLOYER LOGIN
+# =========================================================
+
+def check_employer(
+    username,
+    password
+):
+
+    response = (
+        supabase
+        .table("employers")
+        .select(
+            "id, username"
+        )
+        .eq(
+            "username",
+            username
+        )
+        .eq(
+            "password",
+            password
+        )
+        .execute()
+    )
+
+    if response.data:
+
+        employer = response.data[0]
+
+        return (
+            employer["id"],
+            employer["username"]
+        )
+
+    return None
 
 # =========================================================
 # CREATE EMPLOYER TABLE

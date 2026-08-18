@@ -265,7 +265,7 @@ def send_pdf_email(pdf_data, filename):
     message["To"] = f"{email1}, {email2}"
 
     # Two recipients
-    message["Cc"] = receiver_email_3
+    message["Cc"] = cc_email
 
     message.set_content(
         """

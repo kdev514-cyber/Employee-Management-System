@@ -59,16 +59,13 @@ CURRENTLY_EMPLOYED_DATE = date(9999, 12, 31)
 
 
 # =========================================================
-# FORMAT DATE FOR UI
+# FORMAT DATE
 # =========================================================
 
 def format_date_for_ui(date_value):
 
     if not date_value:
         return ""
-
-    if str(date_value) == "9999-12-31":
-        return "Currently Employed"
 
     try:
 
@@ -80,7 +77,7 @@ def format_date_for_ui(date_value):
             str(date_value)
         ).strftime("%d/%m/%Y")
 
-    except ValueError:
+    except (ValueError, TypeError):
 
         return str(date_value)
 
@@ -163,8 +160,8 @@ def generate_employee_pdf(employees):
             f"${float(employee[3]):,.2f}",
             str(employee[4]),
             str(employee[5]),
-            str(employee[6]),
-            str(employee[7])
+            format_date_for_ui(employee[6]),
+            format_date_for_ui(employee[7])
         ])
 
     # -----------------------------------------------------
@@ -485,8 +482,9 @@ if st.session_state.page == "employee":
 
     if still_employed:
 
-        # UI ONLY
-        st.info("Currently Employed")
+        st.info(
+            "Employment End Date: 31/12/9999"
+        )
 
         employment_end_date = (
             CURRENTLY_EMPLOYED_DATE
@@ -564,7 +562,7 @@ if st.session_state.page == "employee":
 
                 else:
 
-                    save_employee(
+                    result = save_employee(
                         name.strip(),
                         age_number,
                         salary_number,
@@ -575,9 +573,11 @@ if st.session_state.page == "employee":
                         still_employed
                     )
 
-                    st.success(
-                        "Employee saved successfully!"
-                    )
+                    if result:
+
+                        st.success(
+                            "Employee saved successfully!"
+                        )
 
             except ValueError:
 
@@ -848,18 +848,29 @@ if st.session_state.page == "dashboard":
                     for employee in employees:
 
                         display_employees.append({
+
                             "ID": employee[0],
+
                             "Name": employee[1],
+
                             "Age": employee[2],
+
                             "Salary": employee[3],
+
                             "Gender": employee[4],
+
                             "Nationality": employee[5],
-                            "Employment Start": format_date_for_ui(employee[6]),
-                            "Employment End": (
-                                "Currently Employed"
-                                if employee[8]
-                                else format_date_for_ui(employee[7])
-                            )
+
+                            "Employment Start":
+                                format_date_for_ui(
+                                    employee[6]
+                                ),
+
+                            "Employment End":
+                                format_date_for_ui(
+                                    employee[7]
+                                )
+
                         })
 
                     st.dataframe(
@@ -906,18 +917,29 @@ if st.session_state.page == "dashboard":
                             for employee in employees:
 
                                 display_employees.append({
+
                                     "ID": employee[0],
+
                                     "Name": employee[1],
+
                                     "Age": employee[2],
+
                                     "Salary": employee[3],
+
                                     "Gender": employee[4],
+
                                     "Nationality": employee[5],
-                                    "Employment Start": format_date_for_ui(employee[6]),
-                                    "Employment End": (
-                                        "Currently Employed"
-                                        if employee[8]
-                                        else format_date_for_ui(employee[7])
-                                    )
+
+                                    "Employment Start":
+                                        format_date_for_ui(
+                                            employee[6]
+                                        ),
+
+                                    "Employment End":
+                                        format_date_for_ui(
+                                            employee[7]
+                                        )
+
                                 })
 
                             st.dataframe(
@@ -992,7 +1014,9 @@ if st.session_state.page == "dashboard":
 
         if add_still_employed:
 
-            st.info("Currently Employed")
+            st.info(
+                "Employment End Date: 31/12/9999"
+            )
 
             add_end_date = (
                 CURRENTLY_EMPLOYED_DATE
@@ -1054,7 +1078,7 @@ if st.session_state.page == "dashboard":
 
                     else:
 
-                        save_employee(
+                        result = save_employee(
                             add_name.strip(),
                             age_number,
                             salary_number,
@@ -1065,9 +1089,11 @@ if st.session_state.page == "dashboard":
                             add_still_employed
                         )
 
-                        st.success(
-                            "Employee added successfully!"
-                        )
+                        if result:
+
+                            st.success(
+                                "Employee added successfully!"
+                            )
 
                 except ValueError:
 
@@ -1234,7 +1260,7 @@ if st.session_state.page == "dashboard":
                     str(selected_record[6])
                 )
 
-            except:
+            except (ValueError, TypeError):
 
                 existing_start_date = date.today()
 
@@ -1252,7 +1278,9 @@ if st.session_state.page == "dashboard":
 
             if edit_still_employed:
 
-                st.info("Currently Employed")
+                st.info(
+                    "Employment End Date: 31/12/9999"
+                )
 
                 edit_end_date = (
                     CURRENTLY_EMPLOYED_DATE
@@ -1266,7 +1294,7 @@ if st.session_state.page == "dashboard":
                         str(selected_record[7])
                     )
 
-                except:
+                except (ValueError, TypeError):
 
                     existing_end_date = date.today()
 
@@ -1277,7 +1305,7 @@ if st.session_state.page == "dashboard":
                 )
 
             # ---------------------------------------------
-            # UPDATE
+            # UPDATE EMPLOYEE
             # ---------------------------------------------
 
             if st.button(

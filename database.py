@@ -7,6 +7,7 @@ from supabase import create_client
 # =========================================================
 
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
+
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
 supabase = create_client(
@@ -23,6 +24,7 @@ def create_table():
 
     # The employees table is created in Supabase.
     # Nothing needs to be created from Python.
+
     pass
 
 
@@ -34,6 +36,7 @@ def create_employer_table():
 
     # The employers table is created in Supabase.
     # Nothing needs to be created from Python.
+
     pass
 
 
@@ -46,15 +49,32 @@ def save_employee(
     age,
     salary,
     gender,
-    nationality
+    nationality,
+    employment_start_date,
+    employment_end_date,
+    still_in_employment
 ):
 
     data = {
+
         "name": name,
+
         "age": age,
+
         "salary": salary,
+
         "gender": gender,
-        "nationality": nationality
+
+        "nationality": nationality,
+
+        "employment_start_date":
+            employment_start_date,
+
+        "employment_end_date":
+            employment_end_date,
+
+        "still_in_employment":
+            still_in_employment
     }
 
     response = (
@@ -77,7 +97,17 @@ def get_all_employees():
         supabase
         .table("employees")
         .select(
-            "id, name, age, salary, gender, nationality"
+            """
+            id,
+            name,
+            age,
+            salary,
+            gender,
+            nationality,
+            employment_start_date,
+            employment_end_date,
+            still_in_employment
+            """
         )
         .order("id")
         .execute()
@@ -88,12 +118,25 @@ def get_all_employees():
     for employee in response.data:
 
         employees.append([
+
             employee["id"],
+
             employee["name"],
+
             employee["age"],
+
             employee["salary"],
+
             employee["gender"],
-            employee["nationality"]
+
+            employee["nationality"],
+
+            employee["employment_start_date"],
+
+            employee["employment_end_date"],
+
+            employee["still_in_employment"]
+
         ])
 
     return employees
@@ -109,11 +152,25 @@ def search_employees(field, value):
         supabase
         .table("employees")
         .select(
-            "id, name, age, salary, gender, nationality"
+            """
+            id,
+            name,
+            age,
+            salary,
+            gender,
+            nationality,
+            employment_start_date,
+            employment_end_date,
+            still_in_employment
+            """
         )
     )
 
-    # Search by ID
+
+    # -----------------------------------------------------
+    # ID
+    # -----------------------------------------------------
+
     if field == "ID":
 
         query = query.eq(
@@ -121,7 +178,11 @@ def search_employees(field, value):
             int(value)
         )
 
-    # Search by Name
+
+    # -----------------------------------------------------
+    # NAME
+    # -----------------------------------------------------
+
     elif field == "Name":
 
         query = query.ilike(
@@ -129,7 +190,11 @@ def search_employees(field, value):
             f"%{value}%"
         )
 
-    # Search by Age
+
+    # -----------------------------------------------------
+    # AGE
+    # -----------------------------------------------------
+
     elif field == "Age":
 
         query = query.eq(
@@ -137,7 +202,11 @@ def search_employees(field, value):
             int(value)
         )
 
-    # Search by Salary
+
+    # -----------------------------------------------------
+    # SALARY
+    # -----------------------------------------------------
+
     elif field == "Salary":
 
         query = query.eq(
@@ -145,7 +214,11 @@ def search_employees(field, value):
             float(value)
         )
 
-    # Search by Gender
+
+    # -----------------------------------------------------
+    # GENDER
+    # -----------------------------------------------------
+
     elif field == "Gender":
 
         query = query.eq(
@@ -153,7 +226,11 @@ def search_employees(field, value):
             value
         )
 
-    # Search by Nationality
+
+    # -----------------------------------------------------
+    # NATIONALITY
+    # -----------------------------------------------------
+
     elif field == "Nationality":
 
         query = query.ilike(
@@ -161,9 +238,56 @@ def search_employees(field, value):
             f"%{value}%"
         )
 
+
+    # -----------------------------------------------------
+    # EMPLOYMENT START DATE
+    # -----------------------------------------------------
+
+    elif field == "Employment Start Date":
+
+        query = query.eq(
+            "employment_start_date",
+            value
+        )
+
+
+    # -----------------------------------------------------
+    # EMPLOYMENT END DATE
+    # -----------------------------------------------------
+
+    elif field == "Employment End Date":
+
+        query = query.eq(
+            "employment_end_date",
+            value
+        )
+
+
+    # -----------------------------------------------------
+    # STILL IN EMPLOYMENT
+    # -----------------------------------------------------
+
+    elif field == "Still in Employment":
+
+        if value == "Yes":
+
+            query = query.eq(
+                "still_in_employment",
+                True
+            )
+
+        else:
+
+            query = query.eq(
+                "still_in_employment",
+                False
+            )
+
+
     else:
 
         return []
+
 
     response = (
         query
@@ -171,17 +295,31 @@ def search_employees(field, value):
         .execute()
     )
 
+
     employees = []
 
     for employee in response.data:
 
         employees.append([
+
             employee["id"],
+
             employee["name"],
+
             employee["age"],
+
             employee["salary"],
+
             employee["gender"],
-            employee["nationality"]
+
+            employee["nationality"],
+
+            employee["employment_start_date"],
+
+            employee["employment_end_date"],
+
+            employee["still_in_employment"]
+
         ])
 
     return employees
@@ -197,16 +335,35 @@ def update_employee(
     age,
     salary,
     gender,
-    nationality
+    nationality,
+    employment_start_date,
+    employment_end_date,
+    still_in_employment
 ):
 
     data = {
+
         "name": name,
+
         "age": age,
+
         "salary": salary,
+
         "gender": gender,
-        "nationality": nationality
+
+        "nationality": nationality,
+
+        "employment_start_date":
+            employment_start_date,
+
+        "employment_end_date":
+            employment_end_date,
+
+        "still_in_employment":
+            still_in_employment
+
     }
+
 
     response = (
         supabase
@@ -218,6 +375,7 @@ def update_employee(
         )
         .execute()
     )
+
 
     return len(response.data) > 0
 
@@ -254,9 +412,13 @@ def register_employer(
     try:
 
         data = {
+
             "username": username,
+
             "password": password
+
         }
+
 
         response = (
             supabase
@@ -265,7 +427,9 @@ def register_employer(
             .execute()
         )
 
+
         return len(response.data) > 0
+
 
     except Exception as e:
 
@@ -304,6 +468,7 @@ def check_employer(
             .execute()
         )
 
+
         if response.data:
 
             employer = response.data[0]
@@ -313,7 +478,9 @@ def check_employer(
                 employer["username"]
             )
 
+
         return None
+
 
     except Exception as e:
 

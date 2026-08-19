@@ -21,7 +21,7 @@ supabase = create_client(
 
 def create_table():
 
-    # The employees table is created in Supabase.
+    # The employees table is created directly in Supabase.
     # Nothing needs to be created from Python.
     pass
 
@@ -32,7 +32,7 @@ def create_table():
 
 def create_employer_table():
 
-    # The employers table is created in Supabase.
+    # The employers table is created directly in Supabase.
     # Nothing needs to be created from Python.
     pass
 
@@ -58,23 +58,37 @@ def save_employee(
         "salary": salary,
         "gender": gender,
         "nationality": nationality,
-        "employment_start_date": str(
-            employment_start_date
+        "employment_start_date": (
+            employment_start_date.isoformat()
+            if employment_start_date
+            else None
         ),
-        "employment_end_date": str(
-            employment_end_date
+        "employment_end_date": (
+            employment_end_date.isoformat()
+            if employment_end_date
+            else None
         ),
-        "still_employed": still_employed
+        "still_employed": bool(still_employed)
     }
 
-    response = (
-        supabase
-        .table("employees")
-        .insert(data)
-        .execute()
-    )
+    try:
 
-    return response.data
+        response = (
+            supabase
+            .table("employees")
+            .insert(data)
+            .execute()
+        )
+
+        return response.data
+
+    except Exception as e:
+
+        st.error(
+            f"Failed to save employee: {e}"
+        )
+
+        return []
 
 
 # =========================================================
@@ -83,53 +97,63 @@ def save_employee(
 
 def get_all_employees():
 
-    response = (
-        supabase
-        .table("employees")
-        .select(
-            """
-            id,
-            name,
-            age,
-            salary,
-            gender,
-            nationality,
-            employment_start_date,
-            employment_end_date,
-            still_employed
-            """
+    try:
+
+        response = (
+            supabase
+            .table("employees")
+            .select(
+                """
+                id,
+                name,
+                age,
+                salary,
+                gender,
+                nationality,
+                employment_start_date,
+                employment_end_date,
+                still_employed
+                """
+            )
+            .order("id")
+            .execute()
         )
-        .order("id")
-        .execute()
-    )
 
-    employees = []
+        employees = []
 
-    for employee in response.data:
+        for employee in response.data:
 
-        employees.append([
+            employees.append([
 
-            employee["id"],
+                employee["id"],
 
-            employee["name"],
+                employee["name"],
 
-            employee["age"],
+                employee["age"],
 
-            employee["salary"],
+                employee["salary"],
 
-            employee["gender"],
+                employee["gender"],
 
-            employee["nationality"],
+                employee["nationality"],
 
-            employee["employment_start_date"],
+                employee["employment_start_date"],
 
-            employee["employment_end_date"],
+                employee["employment_end_date"],
 
-            employee["still_employed"]
+                employee["still_employed"]
 
-        ])
+            ])
 
-    return employees
+        return employees
+
+    except Exception as e:
+
+        st.error(
+            f"Failed to get employee records: {e}"
+        )
+
+        return []
 
 
 # =========================================================
@@ -138,127 +162,143 @@ def get_all_employees():
 
 def search_employees(field, value):
 
-    query = (
-        supabase
-        .table("employees")
-        .select(
-            """
-            id,
-            name,
-            age,
-            salary,
-            gender,
-            nationality,
-            employment_start_date,
-            employment_end_date,
-            still_employed
-            """
-        )
-    )
+    try:
 
-    # -----------------------------------------------------
-    # SEARCH BY ID
-    # -----------------------------------------------------
-
-    if field == "ID":
-
-        query = query.eq(
-            "id",
-            int(value)
+        query = (
+            supabase
+            .table("employees")
+            .select(
+                """
+                id,
+                name,
+                age,
+                salary,
+                gender,
+                nationality,
+                employment_start_date,
+                employment_end_date,
+                still_employed
+                """
+            )
         )
 
-    # -----------------------------------------------------
-    # SEARCH BY NAME
-    # -----------------------------------------------------
+        # -------------------------------------------------
+        # SEARCH BY ID
+        # -------------------------------------------------
 
-    elif field == "Name":
+        if field == "ID":
 
-        query = query.ilike(
-            "name",
-            f"%{value}%"
+            query = query.eq(
+                "id",
+                int(value)
+            )
+
+        # -------------------------------------------------
+        # SEARCH BY NAME
+        # -------------------------------------------------
+
+        elif field == "Name":
+
+            query = query.ilike(
+                "name",
+                f"%{value}%"
+            )
+
+        # -------------------------------------------------
+        # SEARCH BY AGE
+        # -------------------------------------------------
+
+        elif field == "Age":
+
+            query = query.eq(
+                "age",
+                int(value)
+            )
+
+        # -------------------------------------------------
+        # SEARCH BY SALARY
+        # -------------------------------------------------
+
+        elif field == "Salary":
+
+            query = query.eq(
+                "salary",
+                float(value)
+            )
+
+        # -------------------------------------------------
+        # SEARCH BY GENDER
+        # -------------------------------------------------
+
+        elif field == "Gender":
+
+            query = query.eq(
+                "gender",
+                value
+            )
+
+        # -------------------------------------------------
+        # SEARCH BY NATIONALITY
+        # -------------------------------------------------
+
+        elif field == "Nationality":
+
+            query = query.ilike(
+                "nationality",
+                f"%{value}%"
+            )
+
+        else:
+
+            return []
+
+        response = (
+            query
+            .order("id")
+            .execute()
         )
 
-    # -----------------------------------------------------
-    # SEARCH BY AGE
-    # -----------------------------------------------------
+        employees = []
 
-    elif field == "Age":
+        for employee in response.data:
 
-        query = query.eq(
-            "age",
-            int(value)
+            employees.append([
+
+                employee["id"],
+
+                employee["name"],
+
+                employee["age"],
+
+                employee["salary"],
+
+                employee["gender"],
+
+                employee["nationality"],
+
+                employee["employment_start_date"],
+
+                employee["employment_end_date"],
+
+                employee["still_employed"]
+
+            ])
+
+        return employees
+
+    except ValueError:
+
+        raise ValueError(
+            f"{field} must contain a valid number."
         )
 
-    # -----------------------------------------------------
-    # SEARCH BY SALARY
-    # -----------------------------------------------------
+    except Exception as e:
 
-    elif field == "Salary":
-
-        query = query.eq(
-            "salary",
-            float(value)
+        st.error(
+            f"Failed to search employees: {e}"
         )
-
-    # -----------------------------------------------------
-    # SEARCH BY GENDER
-    # -----------------------------------------------------
-
-    elif field == "Gender":
-
-        query = query.eq(
-            "gender",
-            value
-        )
-
-    # -----------------------------------------------------
-    # SEARCH BY NATIONALITY
-    # -----------------------------------------------------
-
-    elif field == "Nationality":
-
-        query = query.ilike(
-            "nationality",
-            f"%{value}%"
-        )
-
-    else:
 
         return []
-
-    response = (
-        query
-        .order("id")
-        .execute()
-    )
-
-    employees = []
-
-    for employee in response.data:
-
-        employees.append([
-
-            employee["id"],
-
-            employee["name"],
-
-            employee["age"],
-
-            employee["salary"],
-
-            employee["gender"],
-
-            employee["nationality"],
-
-            employee["employment_start_date"],
-
-            employee["employment_end_date"],
-
-            employee["still_employed"]
-
-        ])
-
-    return employees
 
 
 # =========================================================
@@ -289,30 +329,46 @@ def update_employee(
 
         "nationality": nationality,
 
-        "employment_start_date": str(
-            employment_start_date
+        "employment_start_date": (
+            employment_start_date.isoformat()
+            if employment_start_date
+            else None
         ),
 
-        "employment_end_date": str(
-            employment_end_date
+        "employment_end_date": (
+            employment_end_date.isoformat()
+            if employment_end_date
+            else None
         ),
 
-        "still_employed": still_employed
+        "still_employed": bool(
+            still_employed
+        )
 
     }
 
-    response = (
-        supabase
-        .table("employees")
-        .update(data)
-        .eq(
-            "id",
-            employee_id
-        )
-        .execute()
-    )
+    try:
 
-    return len(response.data) > 0
+        response = (
+            supabase
+            .table("employees")
+            .update(data)
+            .eq(
+                "id",
+                employee_id
+            )
+            .execute()
+        )
+
+        return len(response.data) > 0
+
+    except Exception as e:
+
+        st.error(
+            f"Failed to update employee: {e}"
+        )
+
+        return False
 
 
 # =========================================================
@@ -321,18 +377,28 @@ def update_employee(
 
 def delete_employee(employee_id):
 
-    response = (
-        supabase
-        .table("employees")
-        .delete()
-        .eq(
-            "id",
-            employee_id
-        )
-        .execute()
-    )
+    try:
 
-    return len(response.data) > 0
+        response = (
+            supabase
+            .table("employees")
+            .delete()
+            .eq(
+                "id",
+                employee_id
+            )
+            .execute()
+        )
+
+        return len(response.data) > 0
+
+    except Exception as e:
+
+        st.error(
+            f"Failed to delete employee: {e}"
+        )
+
+        return False
 
 
 # =========================================================
@@ -347,11 +413,8 @@ def register_employer(
     try:
 
         data = {
-
             "username": username,
-
             "password": password
-
         }
 
         response = (

@@ -6,7 +6,7 @@ import smtplib
 from datetime import date
 
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.platypus import (
@@ -47,7 +47,6 @@ st.set_page_config(
 # =========================================================
 
 create_table()
-
 create_employer_table()
 
 
@@ -55,37 +54,35 @@ create_employer_table()
 # CONSTANT
 # =========================================================
 
-# Employees who are still working
-# will have this end date.
-
-DEFAULT_END_DATE = date(
-    9999,
-    12,
-    31
-)
+# This date represents "still employed" internally.
+CURRENTLY_EMPLOYED_DATE = date(9999, 12, 31)
 
 
 # =========================================================
-# DATE FORMATTER
+# FORMAT DATE FOR UI
 # =========================================================
 
-def format_date(value):
+def format_date_for_ui(date_value):
 
-    if value is None:
-
+    if not date_value:
         return ""
+
+    if str(date_value) == "9999-12-31":
+        return "Currently Employed"
 
     try:
 
+        if isinstance(date_value, date):
+
+            return date_value.strftime("%d/%m/%Y")
+
         return date.fromisoformat(
-            str(value)
-        ).strftime(
-            "%d/%m/%Y"
-        )
+            str(date_value)
+        ).strftime("%d/%m/%Y")
 
     except ValueError:
 
-        return str(value)
+        return str(date_value)
 
 
 # =========================================================
@@ -98,17 +95,19 @@ def generate_employee_pdf(employees):
 
     document = SimpleDocTemplate(
         pdf_buffer,
-        pagesize=landscape(A4),
-        rightMargin=1.0 * cm,
-        leftMargin=1.0 * cm,
-        topMargin=1.0 * cm,
-        bottomMargin=1.0 * cm
+        pagesize=A4,
+        rightMargin=1.5 * cm,
+        leftMargin=1.5 * cm,
+        topMargin=1.5 * cm,
+        bottomMargin=1.5 * cm
     )
 
     styles = getSampleStyleSheet()
 
-    elements = []
+    title = styles["Title"]
+    normal = styles["Normal"]
 
+    elements = []
 
     # -----------------------------------------------------
     # TITLE
@@ -117,15 +116,12 @@ def generate_employee_pdf(employees):
     elements.append(
         Paragraph(
             "Employee Management System",
-            styles["Title"]
+            title
         )
     )
 
     elements.append(
-        Spacer(
-            1,
-            0.3 * cm
-        )
+        Spacer(1, 0.3 * cm)
     )
 
     elements.append(
@@ -136,110 +132,63 @@ def generate_employee_pdf(employees):
     )
 
     elements.append(
-        Spacer(
-            1,
-            0.5 * cm
-        )
+        Spacer(1, 0.5 * cm)
     )
-
 
     # -----------------------------------------------------
     # TABLE HEADER
     # -----------------------------------------------------
 
     data = [[
-
         "ID",
-
         "Name",
-
         "Age",
-
         "Salary",
-
         "Gender",
-
         "Nationality",
-
         "Employment Start",
-
-        "Employment End",
-
-        "Status"
-
+        "Employment End"
     ]]
 
-
     # -----------------------------------------------------
-    # EMPLOYEE DATA
+    # EMPLOYEE RECORDS
     # -----------------------------------------------------
 
     for employee in employees:
 
-        still_employed = employee[8]
-
-        if still_employed:
-
-            status = "Still Employed"
-
-        else:
-
-            status = "Employment Ended"
-
-
         data.append([
-
             str(employee[0]),
-
             str(employee[1]),
-
             str(employee[2]),
-
             f"${float(employee[3]):,.2f}",
-
             str(employee[4]),
-
             str(employee[5]),
-
-            format_date(employee[6]),
-
-            format_date(employee[7]),
-
-            status
-
+            str(employee[6]),
+            str(employee[7])
         ])
 
-
     # -----------------------------------------------------
-    # TABLE
+    # CREATE TABLE
     # -----------------------------------------------------
 
     table = Table(
         data,
         repeatRows=1,
         colWidths=[
-
+            0.7 * cm,
+            3.0 * cm,
             0.8 * cm,
-
-            3.2 * cm,
-
-            1.0 * cm,
-
-            2.3 * cm,
-
             2.0 * cm,
-
-            2.8 * cm,
-
-            2.8 * cm,
-
-            2.8 * cm,
-
-            3.0 * cm
-
+            1.8 * cm,
+            2.4 * cm,
+            2.5 * cm,
+            2.5 * cm
         ]
     )
 
+    # -----------------------------------------------------
+    # TABLE STYLE
+    # -----------------------------------------------------
 
     table.setStyle(
         TableStyle([
@@ -263,13 +212,6 @@ def generate_employee_pdf(employees):
                 (0, 0),
                 (-1, 0),
                 "Helvetica-Bold"
-            ),
-
-            (
-                "ALIGN",
-                (0, 0),
-                (-1, -1),
-                "CENTER"
             ),
 
             (
@@ -321,25 +263,22 @@ def generate_employee_pdf(employees):
         ])
     )
 
-
     elements.append(table)
 
-
     elements.append(
-        Spacer(
-            1,
-            0.5 * cm
-        )
+        Spacer(1, 0.5 * cm)
     )
-
 
     elements.append(
         Paragraph(
             f"Total Employees: {len(employees)}",
-            styles["Normal"]
+            normal
         )
     )
 
+    # -----------------------------------------------------
+    # BUILD PDF
+    # -----------------------------------------------------
 
     document.build(elements)
 
@@ -352,63 +291,37 @@ def generate_employee_pdf(employees):
 # SEND PDF BY EMAIL
 # =========================================================
 
-def send_pdf_email(
-    pdf_data,
-    filename
-):
+def send_pdf_email(pdf_data, filename):
 
-    sender_email = st.secrets[
-        "EMAIL_ADDRESS"
-    ]
+    sender_email = st.secrets["EMAIL_ADDRESS"]
+    sender_password = st.secrets["EMAIL_PASSWORD"]
 
-    sender_password = st.secrets[
-        "EMAIL_PASSWORD"
-    ]
-
-    recipient_1 = st.secrets[
-        "REPORT_EMAIL_1"
-    ]
-
-    recipient_2 = st.secrets[
-        "REPORT_EMAIL_2"
-    ]
-
-    cc_email = st.secrets[
-        "REPORT_EMAIL_CC"
-    ]
-
+    recipient_1 = st.secrets["REPORT_EMAIL_1"]
+    recipient_2 = st.secrets["REPORT_EMAIL_2"]
+    cc_email = st.secrets["REPORT_EMAIL_CC"]
 
     message = EmailMessage()
 
-    message["Subject"] = (
-        "Employee Records Report"
-    )
+    message["Subject"] = "Employee Records Report"
 
     message["From"] = sender_email
 
-    message["To"] = (
-        f"{recipient_1}, {recipient_2}"
-    )
+    message["To"] = f"{recipient_1}, {recipient_2}"
 
     message["Cc"] = cc_email
-
 
     message.set_content(
         """
 Hello,
 
-Please find attached the latest
-Employee Records Report.
+Please find attached the latest Employee Records Report.
 
-The report includes employee information,
-employment start dates, employment end dates,
-and employment status.
+This report was generated automatically from the Employee Management System.
 
 Regards,
 Employee Management System
 """
     )
-
 
     message.add_attachment(
         pdf_data,
@@ -416,7 +329,6 @@ Employee Management System
         subtype="pdf",
         filename=filename
     )
-
 
     with smtplib.SMTP_SSL(
         "smtp.gmail.com",
@@ -443,28 +355,19 @@ def validate_password(password):
             "Password must contain at least 8 characters."
         )
 
-    if not re.search(
-        r"[A-Z]",
-        password
-    ):
+    if not re.search(r"[A-Z]", password):
 
         return False, (
             "Password must contain at least one capital letter."
         )
 
-    if not re.search(
-        r"[a-z]",
-        password
-    ):
+    if not re.search(r"[a-z]", password):
 
         return False, (
             "Password must contain at least one small letter."
         )
 
-    if not re.search(
-        r"[0-9]",
-        password
-    ):
+    if not re.search(r"[0-9]", password):
 
         return False, (
             "Password must contain at least one number."
@@ -518,11 +421,6 @@ if st.session_state.page == "home":
         ]
     )
 
-
-    # -----------------------------------------------------
-    # Employee
-    # -----------------------------------------------------
-
     if choice == "Employee":
 
         if st.button(
@@ -530,16 +428,9 @@ if st.session_state.page == "home":
             use_container_width=True
         ):
 
-            st.session_state.page = (
-                "employee"
-            )
+            st.session_state.page = "employee"
 
             st.rerun()
-
-
-    # -----------------------------------------------------
-    # Employer
-    # -----------------------------------------------------
 
     if choice == "Employer":
 
@@ -548,9 +439,7 @@ if st.session_state.page == "home":
             use_container_width=True
         ):
 
-            st.session_state.page = (
-                "employer_login"
-            )
+            st.session_state.page = "employer_login"
 
             st.rerun()
 
@@ -561,30 +450,17 @@ if st.session_state.page == "home":
 
 if st.session_state.page == "employee":
 
-    st.title(
-        "Employee Details"
-    )
+    st.title("Employee Details")
 
     st.write(
         "Enter the employee information below."
     )
 
+    name = st.text_input("Name")
 
-    # -----------------------------------------------------
-    # Basic information
-    # -----------------------------------------------------
+    age = st.text_input("Age")
 
-    name = st.text_input(
-        "Name"
-    )
-
-    age = st.text_input(
-        "Age"
-    )
-
-    salary = st.text_input(
-        "Salary"
-    )
+    salary = st.text_input("Salary")
 
     gender = st.selectbox(
         "Gender",
@@ -596,44 +472,24 @@ if st.session_state.page == "employee":
         ]
     )
 
-    nationality = st.text_input(
-        "Nationality"
-    )
-
-
-    # -----------------------------------------------------
-    # Employment Start Date
-    # -----------------------------------------------------
+    nationality = st.text_input("Nationality")
 
     employment_start_date = st.date_input(
         "Employment Start Date",
         value=date.today()
     )
 
-
-    # -----------------------------------------------------
-    # Still in Employment
-    # -----------------------------------------------------
-
-    still_in_employment = st.checkbox(
-        "Still in Employment?",
-        value=True
+    still_employed = st.checkbox(
+        "Still in Employment?"
     )
 
+    if still_employed:
 
-    # -----------------------------------------------------
-    # Employment End Date
-    # -----------------------------------------------------
-
-    if still_in_employment:
+        # UI ONLY
+        st.info("Currently Employed")
 
         employment_end_date = (
-            DEFAULT_END_DATE
-        )
-
-        st.info(
-            "Employment End Date: 31/12/9999 "
-            "(currently employed)"
+            CURRENTLY_EMPLOYED_DATE
         )
 
     else:
@@ -643,28 +499,7 @@ if st.session_state.page == "employee":
             value=date.today()
         )
 
-
-    # -----------------------------------------------------
-    # Validate date
-    # -----------------------------------------------------
-
-    if (
-        employment_end_date
-        < employment_start_date
-    ):
-
-        st.warning(
-            "Employment End Date cannot be "
-            "before Employment Start Date."
-        )
-
-
-    # -----------------------------------------------------
-    # Buttons
-    # -----------------------------------------------------
-
     col1, col2 = st.columns(2)
-
 
     with col1:
 
@@ -673,7 +508,6 @@ if st.session_state.page == "employee":
             use_container_width=True
         )
 
-
     with col2:
 
         back = st.button(
@@ -681,9 +515,8 @@ if st.session_state.page == "employee":
             use_container_width=True
         )
 
-
     # -----------------------------------------------------
-    # Save
+    # SAVE EMPLOYEE
     # -----------------------------------------------------
 
     if save:
@@ -701,13 +534,12 @@ if st.session_state.page == "employee":
             )
 
         elif (
-            employment_end_date
-            < employment_start_date
+            not still_employed
+            and employment_end_date < employment_start_date
         ):
 
             st.error(
-                "Employment End Date cannot be "
-                "before Employment Start Date."
+                "Employment End Date cannot be before Employment Start Date."
             )
 
         else:
@@ -717,7 +549,6 @@ if st.session_state.page == "employee":
                 age_number = int(age)
 
                 salary_number = float(salary)
-
 
                 if age_number <= 18:
 
@@ -734,42 +565,25 @@ if st.session_state.page == "employee":
                 else:
 
                     save_employee(
-
                         name.strip(),
-
                         age_number,
-
                         salary_number,
-
                         gender,
-
                         nationality.strip(),
-
-                        employment_start_date.isoformat(),
-
-                        employment_end_date.isoformat(),
-
-                        still_in_employment
-
+                        employment_start_date,
+                        employment_end_date,
+                        still_employed
                     )
-
 
                     st.success(
                         "Employee saved successfully!"
                     )
 
-
             except ValueError:
 
                 st.error(
-                    "Age must be a whole number "
-                    "and Salary must be a number."
+                    "Age must be a whole number and Salary must be a number."
                 )
-
-
-    # -----------------------------------------------------
-    # Back
-    # -----------------------------------------------------
 
     if back:
 
@@ -784,9 +598,7 @@ if st.session_state.page == "employee":
 
 if st.session_state.page == "employer_login":
 
-    st.title(
-        "Employer Login"
-    )
+    st.title("Employer Login")
 
     username = st.text_input(
         "User ID"
@@ -797,9 +609,7 @@ if st.session_state.page == "employer_login":
         type="password"
     )
 
-
     col1, col2 = st.columns(2)
-
 
     with col1:
 
@@ -808,18 +618,12 @@ if st.session_state.page == "employer_login":
             use_container_width=True
         )
 
-
     with col2:
 
         back = st.button(
             "Back",
             use_container_width=True
         )
-
-
-    # -----------------------------------------------------
-    # Login
-    # -----------------------------------------------------
 
     if login:
 
@@ -839,14 +643,11 @@ if st.session_state.page == "employer_login":
                 password
             )
 
-
             if user:
 
                 st.session_state.logged_in = True
 
-                st.session_state.page = (
-                    "dashboard"
-                )
+                st.session_state.page = "dashboard"
 
                 st.rerun()
 
@@ -856,29 +657,16 @@ if st.session_state.page == "employer_login":
                     "Invalid User ID or Password."
                 )
 
-
     st.divider()
-
-
-    # -----------------------------------------------------
-    # Register
-    # -----------------------------------------------------
 
     if st.button(
         "New Employer? Register Here",
         use_container_width=True
     ):
 
-        st.session_state.page = (
-            "register"
-        )
+        st.session_state.page = "register"
 
         st.rerun()
-
-
-    # -----------------------------------------------------
-    # Back
-    # -----------------------------------------------------
 
     if back:
 
@@ -893,9 +681,7 @@ if st.session_state.page == "employer_login":
 
 if st.session_state.page == "register":
 
-    st.title(
-        "Register New Employer"
-    )
+    st.title("Register New Employer")
 
     new_user = st.text_input(
         "Create User ID"
@@ -911,9 +697,7 @@ if st.session_state.page == "register":
         type="password"
     )
 
-
     col1, col2 = st.columns(2)
-
 
     with col1:
 
@@ -922,18 +706,12 @@ if st.session_state.page == "register":
             use_container_width=True
         )
 
-
     with col2:
 
         login_existing = st.button(
             "Login Existing User",
             use_container_width=True
         )
-
-
-    # -----------------------------------------------------
-    # Register
-    # -----------------------------------------------------
 
     if register:
 
@@ -959,7 +737,6 @@ if st.session_state.page == "register":
                 new_password
             )
 
-
             if not valid:
 
                 st.error(message)
@@ -971,11 +748,14 @@ if st.session_state.page == "register":
                     new_password
                 )
 
-
                 if result:
 
                     st.success(
                         "Employer registered successfully!"
+                    )
+
+                    st.info(
+                        "Redirecting to login..."
                     )
 
                     st.session_state.page = (
@@ -990,16 +770,9 @@ if st.session_state.page == "register":
                         "User ID already exists."
                     )
 
-
-    # -----------------------------------------------------
-    # Login existing
-    # -----------------------------------------------------
-
     if login_existing:
 
-        st.session_state.page = (
-            "employer_login"
-        )
+        st.session_state.page = "employer_login"
 
         st.rerun()
 
@@ -1010,31 +783,17 @@ if st.session_state.page == "register":
 
 if st.session_state.page == "dashboard":
 
-    # -----------------------------------------------------
-    # Security
-    # -----------------------------------------------------
-
     if not st.session_state.logged_in:
 
-        st.session_state.page = (
-            "employer_login"
-        )
+        st.session_state.page = "employer_login"
 
         st.rerun()
 
-
-    st.title(
-        "Employer Dashboard"
-    )
+    st.title("Employer Dashboard")
 
     st.write(
         "Manage employee records"
     )
-
-
-    # -----------------------------------------------------
-    # Dashboard menu
-    # -----------------------------------------------------
 
     action = st.radio(
         "Choose an action:",
@@ -1046,7 +805,6 @@ if st.session_state.page == "dashboard":
             "Generate PDF Report"
         ]
     )
-
 
     st.divider()
 
@@ -1061,7 +819,6 @@ if st.session_state.page == "dashboard":
             "Get Employee Records"
         )
 
-
         search_option = st.selectbox(
             "Search by:",
             [
@@ -1071,17 +828,9 @@ if st.session_state.page == "dashboard":
                 "Age",
                 "Salary",
                 "Gender",
-                "Nationality",
-                "Employment Start Date",
-                "Employment End Date",
-                "Still in Employment"
+                "Nationality"
             ]
         )
-
-
-        # -------------------------------------------------
-        # All
-        # -------------------------------------------------
 
         if search_option == "All":
 
@@ -1092,11 +841,29 @@ if st.session_state.page == "dashboard":
 
                 employees = get_all_employees()
 
-
                 if employees:
 
+                    display_employees = []
+
+                    for employee in employees:
+
+                        display_employees.append({
+                            "ID": employee[0],
+                            "Name": employee[1],
+                            "Age": employee[2],
+                            "Salary": employee[3],
+                            "Gender": employee[4],
+                            "Nationality": employee[5],
+                            "Employment Start": format_date_for_ui(employee[6]),
+                            "Employment End": (
+                                "Currently Employed"
+                                if employee[8]
+                                else format_date_for_ui(employee[7])
+                            )
+                        })
+
                     st.dataframe(
-                        employees,
+                        display_employees,
                         use_container_width=True
                     )
 
@@ -1106,96 +873,11 @@ if st.session_state.page == "dashboard":
                         "No employee records found."
                     )
 
-
-        # -------------------------------------------------
-        # Still in employment
-        # -------------------------------------------------
-
-        elif search_option == "Still in Employment":
-
-            employment_status = st.selectbox(
-                "Employment Status",
-                [
-                    "Yes",
-                    "No"
-                ]
-            )
-
-
-            if st.button(
-                "Search",
-                use_container_width=True
-            ):
-
-                employees = search_employees(
-                    "Still in Employment",
-                    employment_status
-                )
-
-
-                if employees:
-
-                    st.dataframe(
-                        employees,
-                        use_container_width=True
-                    )
-
-                else:
-
-                    st.warning(
-                        "No matching employee found."
-                    )
-
-
-        # -------------------------------------------------
-        # Date searches
-        # -------------------------------------------------
-
-        elif search_option in [
-            "Employment Start Date",
-            "Employment End Date"
-        ]:
-
-            search_date = st.date_input(
-                "Select Date"
-            )
-
-
-            if st.button(
-                "Search",
-                use_container_width=True
-            ):
-
-                employees = search_employees(
-                    search_option,
-                    search_date.isoformat()
-                )
-
-
-                if employees:
-
-                    st.dataframe(
-                        employees,
-                        use_container_width=True
-                    )
-
-                else:
-
-                    st.warning(
-                        "No matching employee found."
-                    )
-
-
-        # -------------------------------------------------
-        # Other searches
-        # -------------------------------------------------
-
         else:
 
             search_value = st.text_input(
                 f"Enter {search_option}:"
             )
-
 
             if st.button(
                 "Search",
@@ -1217,11 +899,29 @@ if st.session_state.page == "dashboard":
                             search_value.strip()
                         )
 
-
                         if employees:
 
+                            display_employees = []
+
+                            for employee in employees:
+
+                                display_employees.append({
+                                    "ID": employee[0],
+                                    "Name": employee[1],
+                                    "Age": employee[2],
+                                    "Salary": employee[3],
+                                    "Gender": employee[4],
+                                    "Nationality": employee[5],
+                                    "Employment Start": format_date_for_ui(employee[6]),
+                                    "Employment End": (
+                                        "Currently Employed"
+                                        if employee[8]
+                                        else format_date_for_ui(employee[7])
+                                    )
+                                })
+
                             st.dataframe(
-                                employees,
+                                display_employees,
                                 use_container_width=True
                             )
 
@@ -1230,7 +930,6 @@ if st.session_state.page == "dashboard":
                             st.warning(
                                 "No matching employee found."
                             )
-
 
                     except ValueError:
 
@@ -1249,24 +948,20 @@ if st.session_state.page == "dashboard":
             "Add Employee"
         )
 
-
         add_name = st.text_input(
             "Name",
             key="add_name"
         )
-
 
         add_age = st.text_input(
             "Age",
             key="add_age"
         )
 
-
         add_salary = st.text_input(
             "Salary",
             key="add_salary"
         )
-
 
         add_gender = st.selectbox(
             "Gender",
@@ -1279,12 +974,10 @@ if st.session_state.page == "dashboard":
             key="add_gender"
         )
 
-
         add_nationality = st.text_input(
             "Nationality",
             key="add_nationality"
         )
-
 
         add_start_date = st.date_input(
             "Employment Start Date",
@@ -1292,21 +985,17 @@ if st.session_state.page == "dashboard":
             key="add_start_date"
         )
 
-
         add_still_employed = st.checkbox(
             "Still in Employment?",
-            value=True,
             key="add_still_employed"
         )
 
-
         if add_still_employed:
 
-            add_end_date = DEFAULT_END_DATE
+            st.info("Currently Employed")
 
-            st.info(
-                "Employment End Date: 31/12/9999 "
-                "(currently employed)"
+            add_end_date = (
+                CURRENTLY_EMPLOYED_DATE
             )
 
         else:
@@ -1316,18 +1005,6 @@ if st.session_state.page == "dashboard":
                 value=date.today(),
                 key="add_end_date"
             )
-
-
-        if (
-            add_end_date
-            < add_start_date
-        ):
-
-            st.warning(
-                "Employment End Date cannot be "
-                "before Employment Start Date."
-            )
-
 
         if st.button(
             "Add Employee",
@@ -1347,27 +1024,21 @@ if st.session_state.page == "dashboard":
                 )
 
             elif (
-                add_end_date
-                < add_start_date
+                not add_still_employed
+                and add_end_date < add_start_date
             ):
 
                 st.error(
-                    "Employment End Date cannot be "
-                    "before Employment Start Date."
+                    "Employment End Date cannot be before Employment Start Date."
                 )
 
             else:
 
                 try:
 
-                    age_number = int(
-                        add_age
-                    )
+                    age_number = int(add_age)
 
-                    salary_number = float(
-                        add_salary
-                    )
-
+                    salary_number = float(add_salary)
 
                     if age_number <= 0:
 
@@ -1384,36 +1055,24 @@ if st.session_state.page == "dashboard":
                     else:
 
                         save_employee(
-
                             add_name.strip(),
-
                             age_number,
-
                             salary_number,
-
                             add_gender,
-
                             add_nationality.strip(),
-
-                            add_start_date.isoformat(),
-
-                            add_end_date.isoformat(),
-
+                            add_start_date,
+                            add_end_date,
                             add_still_employed
-
                         )
-
 
                         st.success(
                             "Employee added successfully!"
                         )
 
-
                 except ValueError:
 
                     st.error(
-                        "Age must be a whole number "
-                        "and Salary must be a number."
+                        "Age must be a whole number and Salary must be a number."
                     )
 
 
@@ -1427,7 +1086,6 @@ if st.session_state.page == "dashboard":
             "Edit Employee"
         )
 
-
         search_option = st.selectbox(
             "Find employee by:",
             [
@@ -1436,65 +1094,22 @@ if st.session_state.page == "dashboard":
                 "Age",
                 "Salary",
                 "Gender",
-                "Nationality",
-                "Employment Start Date",
-                "Employment End Date",
-                "Still in Employment"
+                "Nationality"
             ],
             key="edit_search_option"
         )
 
-
-        # -------------------------------------------------
-        # Search value
-        # -------------------------------------------------
-
-        if search_option == "Still in Employment":
-
-            edit_status = st.selectbox(
-                "Employment Status",
-                [
-                    "Yes",
-                    "No"
-                ],
-                key="edit_status"
-            )
-
-            search_value = edit_status
-
-
-        elif search_option in [
-            "Employment Start Date",
-            "Employment End Date"
-        ]:
-
-            edit_search_date = st.date_input(
-                "Select Date",
-                key="edit_search_date"
-            )
-
-            search_value = (
-                edit_search_date.isoformat()
-            )
-
-
-        else:
-
-            search_value = st.text_input(
-                f"Enter {search_option}:",
-                key="edit_search_value"
-            )
-
+        search_value = st.text_input(
+            f"Enter {search_option}:",
+            key="edit_search_value"
+        )
 
         if st.button(
             "Find Employee",
             use_container_width=True
         ):
 
-            if (
-                isinstance(search_value, str)
-                and search_value.strip() == ""
-            ):
+            if search_value.strip() == "":
 
                 st.error(
                     "Please enter a search value."
@@ -1506,15 +1121,12 @@ if st.session_state.page == "dashboard":
 
                     employees = search_employees(
                         search_option,
-                        search_value
+                        search_value.strip()
                     )
-
 
                     if employees:
 
-                        st.session_state.edit_results = (
-                            employees
-                        )
+                        st.session_state.edit_results = employees
 
                     else:
 
@@ -1524,88 +1136,54 @@ if st.session_state.page == "dashboard":
                             "No matching employee found."
                         )
 
-
                 except ValueError:
 
                     st.error(
                         f"{search_option} must contain a valid number."
                     )
 
-
-        # -------------------------------------------------
-        # Show results
-        # -------------------------------------------------
-
         if (
             "edit_results" in st.session_state
             and st.session_state.edit_results
         ):
 
-            employees = (
-                st.session_state.edit_results
-            )
-
+            employees = st.session_state.edit_results
 
             employee_options = {}
-
 
             for employee in employees:
 
                 employee_id = employee[0]
 
-
                 label = (
-
                     f"ID {employee[0]} | "
-
                     f"{employee[1]} | "
-
                     f"Age {employee[2]} | "
-
                     f"Salary {employee[3]} | "
-
                     f"{employee[4]} | "
-
                     f"{employee[5]}"
-
                 )
 
-
-                employee_options[
-                    label
-                ] = employee_id
-
+                employee_options[label] = employee_id
 
             selected_employee = st.selectbox(
                 "Select employee to edit:",
                 list(employee_options.keys())
             )
 
-
             selected_id = employee_options[
                 selected_employee
             ]
 
-
             selected_record = next(
-
                 employee
-
                 for employee in employees
-
                 if employee[0] == selected_id
-
             )
-
 
             st.write(
                 "Edit the employee information below:"
             )
-
-
-            # -------------------------------------------------
-            # Basic information
-            # -------------------------------------------------
 
             edit_name = st.text_input(
                 "Name",
@@ -1613,20 +1191,17 @@ if st.session_state.page == "dashboard":
                 key=f"edit_name_{selected_id}"
             )
 
-
             edit_age = st.text_input(
                 "Age",
                 value=str(selected_record[2]),
                 key=f"edit_age_{selected_id}"
             )
 
-
             edit_salary = st.text_input(
                 "Salary",
                 value=str(selected_record[3]),
                 key=f"edit_salary_{selected_id}"
             )
-
 
             edit_gender = st.selectbox(
                 "Gender",
@@ -1639,12 +1214,9 @@ if st.session_state.page == "dashboard":
                     "Male",
                     "Female",
                     "Other"
-                ].index(
-                    selected_record[4]
-                ),
+                ].index(selected_record[4]),
                 key=f"edit_gender_{selected_id}"
             )
-
 
             edit_nationality = st.text_input(
                 "Nationality",
@@ -1652,10 +1224,9 @@ if st.session_state.page == "dashboard":
                 key=f"edit_nationality_{selected_id}"
             )
 
-
-            # -------------------------------------------------
-            # Existing start date
-            # -------------------------------------------------
+            # ---------------------------------------------
+            # EMPLOYMENT INFORMATION
+            # ---------------------------------------------
 
             try:
 
@@ -1663,10 +1234,9 @@ if st.session_state.page == "dashboard":
                     str(selected_record[6])
                 )
 
-            except ValueError:
+            except:
 
                 existing_start_date = date.today()
-
 
             edit_start_date = st.date_input(
                 "Employment Start Date",
@@ -1674,36 +1244,18 @@ if st.session_state.page == "dashboard":
                 key=f"edit_start_date_{selected_id}"
             )
 
-
-            # -------------------------------------------------
-            # Existing employment status
-            # -------------------------------------------------
-
-            existing_still_employed = bool(
-                selected_record[8]
-            )
-
-
             edit_still_employed = st.checkbox(
                 "Still in Employment?",
-                value=existing_still_employed,
-                key=f"edit_still_{selected_id}"
+                value=bool(selected_record[8]),
+                key=f"edit_still_employed_{selected_id}"
             )
-
-
-            # -------------------------------------------------
-            # End date
-            # -------------------------------------------------
 
             if edit_still_employed:
 
-                edit_end_date = (
-                    DEFAULT_END_DATE
-                )
+                st.info("Currently Employed")
 
-                st.info(
-                    "Employment End Date: 31/12/9999 "
-                    "(currently employed)"
+                edit_end_date = (
+                    CURRENTLY_EMPLOYED_DATE
                 )
 
             else:
@@ -1714,10 +1266,9 @@ if st.session_state.page == "dashboard":
                         str(selected_record[7])
                     )
 
-                except ValueError:
+                except:
 
                     existing_end_date = date.today()
-
 
                 edit_end_date = st.date_input(
                     "Employment End Date",
@@ -1725,21 +1276,9 @@ if st.session_state.page == "dashboard":
                     key=f"edit_end_date_{selected_id}"
                 )
 
-
-            if (
-                edit_end_date
-                < edit_start_date
-            ):
-
-                st.warning(
-                    "Employment End Date cannot be "
-                    "before Employment Start Date."
-                )
-
-
-            # -------------------------------------------------
-            # Update
-            # -------------------------------------------------
+            # ---------------------------------------------
+            # UPDATE
+            # ---------------------------------------------
 
             if st.button(
                 "Update Employee",
@@ -1758,27 +1297,21 @@ if st.session_state.page == "dashboard":
                     )
 
                 elif (
-                    edit_end_date
-                    < edit_start_date
+                    not edit_still_employed
+                    and edit_end_date < edit_start_date
                 ):
 
                     st.error(
-                        "Employment End Date cannot be "
-                        "before Employment Start Date."
+                        "Employment End Date cannot be before Employment Start Date."
                     )
 
                 else:
 
                     try:
 
-                        new_age = int(
-                            edit_age
-                        )
+                        new_age = int(edit_age)
 
-                        new_salary = float(
-                            edit_salary
-                        )
-
+                        new_salary = float(edit_salary)
 
                         if new_age <= 0:
 
@@ -1795,27 +1328,16 @@ if st.session_state.page == "dashboard":
                         else:
 
                             success = update_employee(
-
                                 selected_id,
-
                                 edit_name.strip(),
-
                                 new_age,
-
                                 new_salary,
-
                                 edit_gender,
-
                                 edit_nationality.strip(),
-
-                                edit_start_date.isoformat(),
-
-                                edit_end_date.isoformat(),
-
+                                edit_start_date,
+                                edit_end_date,
                                 edit_still_employed
-
                             )
-
 
                             if success:
 
@@ -1833,12 +1355,10 @@ if st.session_state.page == "dashboard":
                                     "Employee could not be updated."
                                 )
 
-
                     except ValueError:
 
                         st.error(
-                            "Age must be a whole number "
-                            "and Salary must be a number."
+                            "Age must be a whole number and Salary must be a number."
                         )
 
 
@@ -1852,7 +1372,6 @@ if st.session_state.page == "dashboard":
             "Delete Employee"
         )
 
-
         search_option = st.selectbox(
             "Find employee by:",
             [
@@ -1861,61 +1380,22 @@ if st.session_state.page == "dashboard":
                 "Age",
                 "Salary",
                 "Gender",
-                "Nationality",
-                "Employment Start Date",
-                "Employment End Date",
-                "Still in Employment"
+                "Nationality"
             ],
             key="delete_search_option"
         )
 
-
-        if search_option == "Still in Employment":
-
-            delete_status = st.selectbox(
-                "Employment Status",
-                [
-                    "Yes",
-                    "No"
-                ],
-                key="delete_status"
-            )
-
-            search_value = delete_status
-
-
-        elif search_option in [
-            "Employment Start Date",
-            "Employment End Date"
-        ]:
-
-            delete_search_date = st.date_input(
-                "Select Date",
-                key="delete_search_date"
-            )
-
-            search_value = (
-                delete_search_date.isoformat()
-            )
-
-
-        else:
-
-            search_value = st.text_input(
-                f"Enter {search_option}:",
-                key="delete_search_value"
-            )
-
+        search_value = st.text_input(
+            f"Enter {search_option}:",
+            key="delete_search_value"
+        )
 
         if st.button(
             "Find Employee",
             use_container_width=True
         ):
 
-            if (
-                isinstance(search_value, str)
-                and search_value.strip() == ""
-            ):
+            if search_value.strip() == "":
 
                 st.error(
                     "Please enter a search value."
@@ -1927,15 +1407,12 @@ if st.session_state.page == "dashboard":
 
                     employees = search_employees(
                         search_option,
-                        search_value
+                        search_value.strip()
                     )
-
 
                     if employees:
 
-                        st.session_state.delete_results = (
-                            employees
-                        )
+                        st.session_state.delete_results = employees
 
                     else:
 
@@ -1945,57 +1422,35 @@ if st.session_state.page == "dashboard":
                             "No matching employee found."
                         )
 
-
                 except ValueError:
 
                     st.error(
                         f"{search_option} must contain a valid number."
                     )
 
-
-        # -------------------------------------------------
-        # Delete results
-        # -------------------------------------------------
-
         if (
             "delete_results" in st.session_state
             and st.session_state.delete_results
         ):
 
-            employees = (
-                st.session_state.delete_results
-            )
-
+            employees = st.session_state.delete_results
 
             employee_options = {}
-
 
             for employee in employees:
 
                 employee_id = employee[0]
 
-
                 label = (
-
                     f"ID {employee[0]} | "
-
                     f"{employee[1]} | "
-
                     f"Age {employee[2]} | "
-
                     f"Salary {employee[3]} | "
-
                     f"{employee[4]} | "
-
                     f"{employee[5]}"
-
                 )
 
-
-                employee_options[
-                    label
-                ] = employee_id
-
+                employee_options[label] = employee_id
 
             selected_employee = st.selectbox(
                 "Select employee to delete:",
@@ -2003,22 +1458,17 @@ if st.session_state.page == "dashboard":
                 key="delete_selected_employee"
             )
 
-
             selected_id = employee_options[
                 selected_employee
             ]
-
 
             st.warning(
                 "Deleting an employee is permanent."
             )
 
-
             confirm_delete = st.checkbox(
-                "I understand that this employee record "
-                "will be permanently deleted."
+                "I understand that this employee record will be permanently deleted."
             )
-
 
             if st.button(
                 "Delete Employee",
@@ -2036,7 +1486,6 @@ if st.session_state.page == "dashboard":
                     success = delete_employee(
                         selected_id
                     )
-
 
                     if success:
 
@@ -2065,12 +1514,10 @@ if st.session_state.page == "dashboard":
             "Generate Employee PDF Report"
         )
 
-
         st.write(
             "Generate a PDF containing all employee records "
             "and automatically send it to the configured email address."
         )
-
 
         if st.button(
             "Generate PDF & Send to Email",
@@ -2079,12 +1526,10 @@ if st.session_state.page == "dashboard":
 
             employees = get_all_employees()
 
-
             if not employees:
 
                 st.warning(
-                    "There are no employee records "
-                    "to include in the report."
+                    "There are no employee records to include in the report."
                 )
 
             else:
@@ -2095,22 +1540,18 @@ if st.session_state.page == "dashboard":
                         employees
                     )
 
-
                     filename = (
                         "employee_records_report.pdf"
                     )
-
 
                     send_pdf_email(
                         pdf_data,
                         filename
                     )
 
-
                     st.success(
                         "PDF generated and sent successfully!"
                     )
-
 
                     st.download_button(
                         label="Download PDF",
@@ -2119,7 +1560,6 @@ if st.session_state.page == "dashboard":
                         mime="application/pdf",
                         use_container_width=True
                     )
-
 
                 except Exception as e:
 
@@ -2133,7 +1573,6 @@ if st.session_state.page == "dashboard":
     # =====================================================
 
     st.divider()
-
 
     if st.button(
         "Logout",

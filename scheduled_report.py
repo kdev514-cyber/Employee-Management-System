@@ -9,7 +9,7 @@ from email.message import EmailMessage
 from supabase import create_client
 
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import (
@@ -25,13 +25,8 @@ from reportlab.platypus import (
 # SUPABASE CONNECTION
 # =========================================================
 
-SUPABASE_URL = os.environ[
-    "SUPABASE_URL"
-]
-
-SUPABASE_KEY = os.environ[
-    "SUPABASE_KEY"
-]
+SUPABASE_URL = os.environ["SUPABASE_URL"]
+SUPABASE_KEY = os.environ["SUPABASE_KEY"]
 
 supabase = create_client(
     SUPABASE_URL,
@@ -40,33 +35,7 @@ supabase = create_client(
 
 
 # =========================================================
-# FORMAT DATE
-# =========================================================
-
-def format_date(value):
-
-    if value is None:
-
-        return ""
-
-    try:
-
-        parsed_date = datetime.strptime(
-            str(value),
-            "%Y-%m-%d"
-        )
-
-        return parsed_date.strftime(
-            "%d/%m/%Y"
-        )
-
-    except ValueError:
-
-        return str(value)
-
-
-# =========================================================
-# GET EMPLOYEES
+# GET EMPLOYEES FROM SUPABASE
 # =========================================================
 
 def get_all_employees():
@@ -84,16 +53,14 @@ def get_all_employees():
             nationality,
             employment_start_date,
             employment_end_date,
-            still_in_employment
+            still_employed
             """
         )
         .order("id")
         .execute()
     )
 
-
     employees = []
-
 
     for employee in response.data:
 
@@ -115,12 +82,36 @@ def get_all_employees():
 
             employee["employment_end_date"],
 
-            employee["still_in_employment"]
+            employee["still_employed"]
 
         ])
 
-
     return employees
+
+
+# =========================================================
+# FORMAT DATE FOR PDF
+# =========================================================
+
+def format_date_for_pdf(date_value):
+
+    if not date_value:
+        return ""
+
+    try:
+
+        date_object = datetime.strptime(
+            str(date_value),
+            "%Y-%m-%d"
+        )
+
+        return date_object.strftime(
+            "%d/%m/%Y"
+        )
+
+    except ValueError:
+
+        return str(date_value)
 
 
 # =========================================================
@@ -131,120 +122,65 @@ def generate_employee_pdf(employees):
 
     pdf_buffer = io.BytesIO()
 
-
     document = SimpleDocTemplate(
-
         pdf_buffer,
-
-        pagesize=landscape(A4),
-
+        pagesize=A4,
         rightMargin=1.0 * cm,
-
         leftMargin=1.0 * cm,
-
-        topMargin=1.0 * cm,
-
-        bottomMargin=1.0 * cm
-
+        topMargin=1.5 * cm,
+        bottomMargin=1.5 * cm
     )
-
 
     styles = getSampleStyleSheet()
 
     elements = []
 
-
-    # =====================================================
+    # -----------------------------------------------------
     # TITLE
-    # =====================================================
+    # -----------------------------------------------------
 
     elements.append(
-
         Paragraph(
-
             "Employee Management System",
-
             styles["Title"]
-
         )
-
     )
 
-
     elements.append(
-
-        Spacer(
-            1,
-            0.3 * cm
-        )
-
+        Spacer(1, 0.3 * cm)
     )
 
-
     elements.append(
-
         Paragraph(
-
             "Daily Employee Records Report",
-
             styles["Heading2"]
-
         )
-
     )
-
 
     elements.append(
-
-        Spacer(
-            1,
-            0.5 * cm
-        )
-
+        Spacer(1, 0.5 * cm)
     )
 
-
-    # =====================================================
-    # HEADER
-    # =====================================================
+    # -----------------------------------------------------
+    # TABLE HEADER
+    # -----------------------------------------------------
 
     data = [[
-
         "ID",
-
         "Name",
-
         "Age",
-
         "Salary",
-
         "Gender",
-
         "Nationality",
-
         "Employment Start",
-
-        "Employment End",
-
-        "Status"
-
+        "Employment End"
     ]]
 
-
-    # =====================================================
+    # -----------------------------------------------------
     # EMPLOYEE DATA
-    # =====================================================
+    # -----------------------------------------------------
 
     for employee in employees:
-
-        if employee[8]:
-
-            status = "Still Employed"
-
-        else:
-
-            status = "Employment Ended"
-
 
         data.append([
 
@@ -260,56 +196,40 @@ def generate_employee_pdf(employees):
 
             str(employee[5]),
 
-            format_date(employee[6]),
+            format_date_for_pdf(
+                employee[6]
+            ),
 
-            format_date(employee[7]),
-
-            status
+            format_date_for_pdf(
+                employee[7]
+            )
 
         ])
 
-
-    # =====================================================
-    # TABLE
-    # =====================================================
+    # -----------------------------------------------------
+    # CREATE TABLE
+    # -----------------------------------------------------
 
     table = Table(
-
         data,
-
         repeatRows=1,
-
         colWidths=[
-
+            0.7 * cm,
+            2.8 * cm,
             0.8 * cm,
-
-            3.2 * cm,
-
-            1.0 * cm,
-
-            2.3 * cm,
-
             2.0 * cm,
-
-            2.8 * cm,
-
-            2.8 * cm,
-
-            2.8 * cm,
-
-            3.0 * cm
-
+            1.8 * cm,
+            2.3 * cm,
+            2.5 * cm,
+            2.5 * cm
         ]
-
     )
 
-
-    # =====================================================
+    # -----------------------------------------------------
     # TABLE STYLE
-    # =====================================================
+    # -----------------------------------------------------
 
     table.setStyle(
-
         TableStyle([
 
             (
@@ -336,15 +256,15 @@ def generate_employee_pdf(employees):
             (
                 "ALIGN",
                 (0, 0),
-                (-1, -1),
+                (0, -1),
                 "CENTER"
             ),
 
             (
-                "VALIGN",
-                (0, 0),
-                (-1, -1),
-                "MIDDLE"
+                "ALIGN",
+                (2, 1),
+                (3, -1),
+                "CENTER"
             ),
 
             (
@@ -353,6 +273,13 @@ def generate_employee_pdf(employees):
                 (-1, -1),
                 0.5,
                 colors.black
+            ),
+
+            (
+                "VALIGN",
+                (0, 0),
+                (-1, -1),
+                "MIDDLE"
             ),
 
             (
@@ -387,48 +314,30 @@ def generate_employee_pdf(employees):
             )
 
         ])
-
     )
-
 
     elements.append(table)
 
-
     elements.append(
-
-        Spacer(
-            1,
-            0.5 * cm
-        )
-
+        Spacer(1, 0.5 * cm)
     )
 
-
-    # =====================================================
-    # TOTAL
-    # =====================================================
+    # -----------------------------------------------------
+    # TOTAL EMPLOYEES
+    # -----------------------------------------------------
 
     elements.append(
-
         Paragraph(
-
             f"Total Employees: {len(employees)}",
-
             styles["Normal"]
-
         )
-
     )
 
+    # -----------------------------------------------------
+    # BUILD PDF
+    # -----------------------------------------------------
 
-    # =====================================================
-    # BUILD
-    # =====================================================
-
-    document.build(
-        elements
-    )
-
+    document.build(elements)
 
     pdf_buffer.seek(0)
 
@@ -436,13 +345,10 @@ def generate_employee_pdf(employees):
 
 
 # =========================================================
-# SEND EMAIL
+# SEND PDF EMAIL
 # =========================================================
 
-def send_pdf_email(
-    pdf_data,
-    filename
-):
+def send_pdf_email(pdf_data, filename):
 
     sender_email = os.environ[
         "EMAIL_ADDRESS"
@@ -464,29 +370,27 @@ def send_pdf_email(
         "REPORT_EMAIL_CC"
     ]
 
+    # -----------------------------------------------------
+    # CREATE EMAIL
+    # -----------------------------------------------------
 
     message = EmailMessage()
-
 
     message["Subject"] = (
         "Daily Employee Records Report"
     )
 
-
-    message["From"] = (
-        sender_email
-    )
-
+    message["From"] = sender_email
 
     message["To"] = (
         f"{recipient_1}, {recipient_2}"
     )
 
+    message["Cc"] = cc_email
 
-    message["Cc"] = (
-        cc_email
-    )
-
+    # -----------------------------------------------------
+    # EMAIL BODY
+    # -----------------------------------------------------
 
     message.set_content(
         """
@@ -495,42 +399,28 @@ Hello,
 Please find attached the latest daily
 Employee Records Report.
 
-The report contains:
-
-- Employee information
-- Employment start date
-- Employment end date
-- Current employment status
-
-For employees who are still employed,
-the employment end date is recorded as
-31/12/9999.
-
 This report was automatically generated
-by the Employee Management System.
+at 8:00 AM.
 
 Regards,
 Employee Management System
 """
     )
 
+    # -----------------------------------------------------
+    # ATTACH PDF
+    # -----------------------------------------------------
 
     message.add_attachment(
-
         pdf_data,
-
         maintype="application",
-
         subtype="pdf",
-
         filename=filename
-
     )
 
-
-    # =====================================================
-    # GMAIL
-    # =====================================================
+    # -----------------------------------------------------
+    # SEND USING GMAIL
+    # -----------------------------------------------------
 
     with smtplib.SMTP_SSL(
         "smtp.gmail.com",
@@ -538,13 +428,9 @@ Employee Management System
     ) as smtp:
 
         smtp.login(
-
             sender_email,
-
             sender_password
-
         )
-
 
         smtp.send_message(
             message
@@ -561,9 +447,11 @@ def main():
         "Starting daily employee report..."
     )
 
+    # -----------------------------------------------------
+    # GET EMPLOYEES
+    # -----------------------------------------------------
 
     employees = get_all_employees()
-
 
     if not employees:
 
@@ -573,39 +461,30 @@ def main():
 
         return
 
-
     print(
-        f"Found {len(employees)} "
-        "employee records in Supabase."
+        f"Found {len(employees)} employee records in Supabase."
     )
 
-
-    # =====================================================
-    # PDF
-    # =====================================================
+    # -----------------------------------------------------
+    # GENERATE PDF
+    # -----------------------------------------------------
 
     pdf_data = generate_employee_pdf(
         employees
     )
 
-
     filename = (
         "daily_employee_records_report.pdf"
     )
 
-
-    # =====================================================
-    # EMAIL
-    # =====================================================
+    # -----------------------------------------------------
+    # SEND EMAIL
+    # -----------------------------------------------------
 
     send_pdf_email(
-
         pdf_data,
-
         filename
-
     )
-
 
     print(
         "PDF generated and email sent successfully."
@@ -613,7 +492,7 @@ def main():
 
 
 # =========================================================
-# RUN
+# RUN PROGRAM
 # =========================================================
 
 if __name__ == "__main__":

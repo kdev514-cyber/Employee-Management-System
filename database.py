@@ -7,7 +7,6 @@ from supabase import create_client
 # =========================================================
 
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
-
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
 supabase = create_client(
@@ -24,7 +23,6 @@ def create_table():
 
     # The employees table is created in Supabase.
     # Nothing needs to be created from Python.
-
     pass
 
 
@@ -36,7 +34,6 @@ def create_employer_table():
 
     # The employers table is created in Supabase.
     # Nothing needs to be created from Python.
-
     pass
 
 
@@ -52,29 +49,22 @@ def save_employee(
     nationality,
     employment_start_date,
     employment_end_date,
-    still_in_employment
+    still_employed
 ):
 
     data = {
-
         "name": name,
-
         "age": age,
-
         "salary": salary,
-
         "gender": gender,
-
         "nationality": nationality,
-
-        "employment_start_date":
-            employment_start_date,
-
-        "employment_end_date":
-            employment_end_date,
-
-        "still_in_employment":
-            still_in_employment
+        "employment_start_date": str(
+            employment_start_date
+        ),
+        "employment_end_date": str(
+            employment_end_date
+        ),
+        "still_employed": still_employed
     }
 
     response = (
@@ -106,7 +96,7 @@ def get_all_employees():
             nationality,
             employment_start_date,
             employment_end_date,
-            still_in_employment
+            still_employed
             """
         )
         .order("id")
@@ -135,7 +125,7 @@ def get_all_employees():
 
             employee["employment_end_date"],
 
-            employee["still_in_employment"]
+            employee["still_employed"]
 
         ])
 
@@ -161,14 +151,13 @@ def search_employees(field, value):
             nationality,
             employment_start_date,
             employment_end_date,
-            still_in_employment
+            still_employed
             """
         )
     )
 
-
     # -----------------------------------------------------
-    # ID
+    # SEARCH BY ID
     # -----------------------------------------------------
 
     if field == "ID":
@@ -178,9 +167,8 @@ def search_employees(field, value):
             int(value)
         )
 
-
     # -----------------------------------------------------
-    # NAME
+    # SEARCH BY NAME
     # -----------------------------------------------------
 
     elif field == "Name":
@@ -190,9 +178,8 @@ def search_employees(field, value):
             f"%{value}%"
         )
 
-
     # -----------------------------------------------------
-    # AGE
+    # SEARCH BY AGE
     # -----------------------------------------------------
 
     elif field == "Age":
@@ -202,9 +189,8 @@ def search_employees(field, value):
             int(value)
         )
 
-
     # -----------------------------------------------------
-    # SALARY
+    # SEARCH BY SALARY
     # -----------------------------------------------------
 
     elif field == "Salary":
@@ -214,9 +200,8 @@ def search_employees(field, value):
             float(value)
         )
 
-
     # -----------------------------------------------------
-    # GENDER
+    # SEARCH BY GENDER
     # -----------------------------------------------------
 
     elif field == "Gender":
@@ -226,9 +211,8 @@ def search_employees(field, value):
             value
         )
 
-
     # -----------------------------------------------------
-    # NATIONALITY
+    # SEARCH BY NATIONALITY
     # -----------------------------------------------------
 
     elif field == "Nationality":
@@ -238,63 +222,15 @@ def search_employees(field, value):
             f"%{value}%"
         )
 
-
-    # -----------------------------------------------------
-    # EMPLOYMENT START DATE
-    # -----------------------------------------------------
-
-    elif field == "Employment Start Date":
-
-        query = query.eq(
-            "employment_start_date",
-            value
-        )
-
-
-    # -----------------------------------------------------
-    # EMPLOYMENT END DATE
-    # -----------------------------------------------------
-
-    elif field == "Employment End Date":
-
-        query = query.eq(
-            "employment_end_date",
-            value
-        )
-
-
-    # -----------------------------------------------------
-    # STILL IN EMPLOYMENT
-    # -----------------------------------------------------
-
-    elif field == "Still in Employment":
-
-        if value == "Yes":
-
-            query = query.eq(
-                "still_in_employment",
-                True
-            )
-
-        else:
-
-            query = query.eq(
-                "still_in_employment",
-                False
-            )
-
-
     else:
 
         return []
-
 
     response = (
         query
         .order("id")
         .execute()
     )
-
 
     employees = []
 
@@ -318,7 +254,7 @@ def search_employees(field, value):
 
             employee["employment_end_date"],
 
-            employee["still_in_employment"]
+            employee["still_employed"]
 
         ])
 
@@ -338,7 +274,7 @@ def update_employee(
     nationality,
     employment_start_date,
     employment_end_date,
-    still_in_employment
+    still_employed
 ):
 
     data = {
@@ -353,17 +289,17 @@ def update_employee(
 
         "nationality": nationality,
 
-        "employment_start_date":
-            employment_start_date,
+        "employment_start_date": str(
+            employment_start_date
+        ),
 
-        "employment_end_date":
-            employment_end_date,
+        "employment_end_date": str(
+            employment_end_date
+        ),
 
-        "still_in_employment":
-            still_in_employment
+        "still_employed": still_employed
 
     }
-
 
     response = (
         supabase
@@ -375,7 +311,6 @@ def update_employee(
         )
         .execute()
     )
-
 
     return len(response.data) > 0
 
@@ -419,7 +354,6 @@ def register_employer(
 
         }
 
-
         response = (
             supabase
             .table("employers")
@@ -427,9 +361,7 @@ def register_employer(
             .execute()
         )
 
-
         return len(response.data) > 0
-
 
     except Exception as e:
 
@@ -468,7 +400,6 @@ def check_employer(
             .execute()
         )
 
-
         if response.data:
 
             employer = response.data[0]
@@ -478,9 +409,7 @@ def check_employer(
                 employer["username"]
             )
 
-
         return None
-
 
     except Exception as e:
 

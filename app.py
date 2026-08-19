@@ -54,43 +54,15 @@ create_employer_table()
 # CONSTANT
 # =========================================================
 
-# 31/12/9999 represents "still employed" in the database.
+# This date represents "still employed" internally.
 CURRENTLY_EMPLOYED_DATE = date(9999, 12, 31)
 
 
 # =========================================================
-# FORMAT DATE FOR EMPLOYEE PAGE
+# FORMAT DATE FOR UI
 # =========================================================
 
 def format_date_for_ui(date_value):
-
-    if not date_value:
-        return ""
-
-    if str(date_value) == "9999-12-31":
-
-        return "Currently Employed"
-
-    try:
-
-        if isinstance(date_value, date):
-
-            return date_value.strftime("%d/%m/%Y")
-
-        return date.fromisoformat(
-            str(date_value)
-        ).strftime("%d/%m/%Y")
-
-    except ValueError:
-
-        return str(date_value)
-
-
-# =========================================================
-# FORMAT DATE FOR TABLE / PDF
-# =========================================================
-
-def format_date_for_table(date_value):
 
     if not date_value:
         return ""
@@ -121,8 +93,8 @@ def generate_employee_pdf(employees):
     document = SimpleDocTemplate(
         pdf_buffer,
         pagesize=A4,
-        rightMargin=1.5 * cm,
-        leftMargin=1.5 * cm,
+        rightMargin=1.0 * cm,
+        leftMargin=1.0 * cm,
         topMargin=1.5 * cm,
         bottomMargin=1.5 * cm
     )
@@ -172,7 +144,8 @@ def generate_employee_pdf(employees):
         "Gender",
         "Nationality",
         "Employment Start",
-        "Employment End"
+        "Employment End",
+        "Still Employed"
     ]]
 
     # -----------------------------------------------------
@@ -181,6 +154,30 @@ def generate_employee_pdf(employees):
 
     for employee in employees:
 
+        # employee[8] = still_employed
+        still_employed = bool(employee[8])
+
+        # Format employment dates for PDF
+        try:
+
+            start_date = date.fromisoformat(
+                str(employee[6])
+            ).strftime("%d/%m/%Y")
+
+        except:
+
+            start_date = str(employee[6])
+
+        try:
+
+            end_date = date.fromisoformat(
+                str(employee[7])
+            ).strftime("%d/%m/%Y")
+
+        except:
+
+            end_date = str(employee[7])
+
         data.append([
             str(employee[0]),
             str(employee[1]),
@@ -188,8 +185,9 @@ def generate_employee_pdf(employees):
             f"${float(employee[3]):,.2f}",
             str(employee[4]),
             str(employee[5]),
-            format_date_for_table(employee[6]),
-            format_date_for_table(employee[7])
+            start_date,
+            end_date,
+            "Yes" if still_employed else "No"
         ])
 
     # -----------------------------------------------------
@@ -200,14 +198,15 @@ def generate_employee_pdf(employees):
         data,
         repeatRows=1,
         colWidths=[
-            0.7 * cm,
-            3.0 * cm,
-            0.8 * cm,
-            2.0 * cm,
-            1.8 * cm,
-            2.4 * cm,
-            2.5 * cm,
-            2.5 * cm
+            0.6 * cm,   # ID
+            2.4 * cm,   # Name
+            0.7 * cm,   # Age
+            1.8 * cm,   # Salary
+            1.5 * cm,   # Gender
+            2.0 * cm,   # Nationality
+            2.4 * cm,   # Employment Start
+            2.4 * cm,   # Employment End
+            1.8 * cm    # Still Employed
         ]
     )
 
@@ -255,10 +254,17 @@ def generate_employee_pdf(employees):
             ),
 
             (
+                "ALIGN",
+                (0, 0),
+                (-1, -1),
+                "CENTER"
+            ),
+
+            (
                 "FONTSIZE",
                 (0, 0),
                 (-1, -1),
-                7
+                6.5
             ),
 
             (
@@ -323,13 +329,10 @@ def generate_employee_pdf(employees):
 def send_pdf_email(pdf_data, filename):
 
     sender_email = st.secrets["EMAIL_ADDRESS"]
-
     sender_password = st.secrets["EMAIL_PASSWORD"]
 
     recipient_1 = st.secrets["REPORT_EMAIL_1"]
-
     recipient_2 = st.secrets["REPORT_EMAIL_2"]
-
     cc_email = st.secrets["REPORT_EMAIL_CC"]
 
     message = EmailMessage()
@@ -517,13 +520,10 @@ if st.session_state.page == "employee":
 
     if still_employed:
 
-        # -------------------------------------------------
-        # FIRST EMPLOYEE PAGE:
-        # SHOW TEXT "CURRENTLY EMPLOYED"
-        # -------------------------------------------------
-
+        # First page shows text only.
         st.info("Currently Employed")
 
+        # Internally store 31/12/9999.
         employment_end_date = (
             CURRENTLY_EMPLOYED_DATE
         )
@@ -890,15 +890,19 @@ if st.session_state.page == "dashboard":
                             "Salary": employee[3],
                             "Gender": employee[4],
                             "Nationality": employee[5],
-
-                            # TABLE:
-                            # Always show the actual date
-                            "Employment Start": format_date_for_table(
+                            "Employment Start": format_date_for_ui(
                                 employee[6]
                             ),
 
-                            "Employment End": format_date_for_table(
+                            # Table shows 31/12/9999
+                            "Employment End": format_date_for_ui(
                                 employee[7]
+                            ),
+
+                            "Still Employed": (
+                                "Yes"
+                                if employee[8]
+                                else "No"
                             )
                         })
 
@@ -952,15 +956,19 @@ if st.session_state.page == "dashboard":
                                     "Salary": employee[3],
                                     "Gender": employee[4],
                                     "Nationality": employee[5],
-
-                                    # TABLE:
-                                    # Always show the actual date
-                                    "Employment Start": format_date_for_table(
+                                    "Employment Start": format_date_for_ui(
                                         employee[6]
                                     ),
 
-                                    "Employment End": format_date_for_table(
+                                    # Table shows 31/12/9999
+                                    "Employment End": format_date_for_ui(
                                         employee[7]
+                                    ),
+
+                                    "Still Employed": (
+                                        "Yes"
+                                        if employee[8]
+                                        else "No"
                                     )
                                 })
 
@@ -1596,10 +1604,6 @@ if st.session_state.page == "dashboard":
                     st.success(
                         "PDF generated and sent successfully!"
                     )
-
-                    # -------------------------------------------------
-                    # STREAMLIT BUILT-IN DOWNLOAD BUTTON
-                    # -------------------------------------------------
 
                     st.download_button(
                         label="Download PDF",
